@@ -1,19 +1,21 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import Sidebar from './Sidebar';
-import LoadingAnimation from '../../animations/loading.json';
+import LoadingAnimation from '../function/LoadingAnimation';
 
 const Dashboard = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) return <LoadingAnimation />;
 
+  if (!user || user.role === 'buyer') return null; // ProtectedRoute handles this
+
   return (
-    <div className="drawer">
+    <div className="drawer lg:drawer-open">
       <input id="sidebar" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content">
+      <div className="drawer-content flex flex-col">
         <div className="navbar bg-base-100 shadow">
-          <div className="flex-none">
+          <div className="flex-none lg:hidden">
             <label htmlFor="sidebar" className="btn btn-square btn-ghost">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -34,9 +36,7 @@ const Dashboard = ({ children }) => {
             <h1 className="text-xl font-bold">{user?.role.toUpperCase()} Dashboard</h1>
           </div>
         </div>
-        <div className="p-4">
-          {children || <h2 className="text-2xl">Welcome to the Dashboard</h2>}
-        </div>
+        <div className="p-6 flex-1">{children}</div>
       </div>
       <Sidebar />
     </div>

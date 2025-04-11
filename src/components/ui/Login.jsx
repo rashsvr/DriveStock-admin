@@ -23,7 +23,9 @@ const Login = () => {
     setLoading(false);
     if (success) {
       setAlert({ type: 'success', message });
-      setTimeout(() => navigate('/dashboard'), 1000);
+      setTimeout(() => {
+        navigate('/dashboard'); // Buyer redirection handled in AuthContext
+      }, 1000);
     } else if (message) {
       setAlert({ type: 'error', message });
     }
@@ -72,7 +74,7 @@ const Login = () => {
             <p className="text-center mt-4">
               Don't have an account?{' '}
               <a href="/register" className="link link-primary">
-                Register
+                Register (Sellers Only)
               </a>
             </p>
           </form>

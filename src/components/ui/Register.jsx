@@ -10,7 +10,6 @@ const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'buyer',
     name: '',
     phone: '',
   });
@@ -25,7 +24,7 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setAlert(null);
-    const { success, message } = await register(formData);
+    const { success, message } = await register({ ...formData, role: 'seller' });
     setLoading(false);
     if (success) {
       setAlert({ type: 'success', message });
@@ -41,7 +40,7 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-200">
       <div className="card w-full max-w-md shadow-xl bg-base-100">
         <div className="card-body">
-          <h2 className="card-title text-2xl text-center">Register</h2>
+          <h2 className="card-title text-2xl text-center">Register (Sellers Only)</h2>
           {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
           <form onSubmit={handleSubmit}>
             <div className="form-control">
@@ -69,23 +68,6 @@ const Register = () => {
                 className="input input-bordered"
                 required
               />
-            </div>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Role</span>
-              </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="select select-bordered"
-                required
-              >
-                <option value="buyer">Buyer</option>
-                <option value="seller">Seller</option>
-                <option value="courier">Courier</option>
-                <option value="admin">Admin</option>
-              </select>
             </div>
             <div className="form-control">
               <label className="label">

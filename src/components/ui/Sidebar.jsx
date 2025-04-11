@@ -6,6 +6,8 @@ import { LogOut } from 'lucide-react';
 const Sidebar = () => {
   const { user, logout } = useContext(AuthContext);
 
+  console.log('Sidebar user:', user); // Debug log
+
   const navItems = {
     admin: [
       { path: '/dashboard/admins', label: 'Manage Admins' },
@@ -13,21 +15,19 @@ const Sidebar = () => {
       { path: '/dashboard/sellers', label: 'Manage Sellers' },
       { path: '/dashboard/buyers', label: 'Manage Buyers' },
       { path: '/dashboard/categories', label: 'Manage Categories' },
+      { path: '/dashboard/profile', label: 'My Profile' },
+      { path: '/dashboard/analytics', label: 'Analytics' },
     ],
     seller: [
       { path: '/dashboard/products', label: 'My Products' },
       { path: '/dashboard/orders', label: 'My Orders' },
     ],
-    buyer: [
-      { path: '/dashboard/products', label: 'Browse Products' },
-      { path: '/dashboard/cart', label: 'Cart' },
-      { path: '/dashboard/orders', label: 'My Orders' },
-    ],
     courier: [
       { path: '/dashboard/deliveries', label: 'My Deliveries' },
-      // Placeholder for courier-specific routes
     ],
   };
+
+  if (!user || user.role === 'buyer') return null;
 
   return (
     <div className="drawer-side">
@@ -36,17 +36,16 @@ const Sidebar = () => {
         <li className="mb-4">
           <h2 className="text-xl font-bold">Dashboard</h2>
         </li>
-        {user &&
-          navItems[user.role]?.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) => (isActive ? 'bg-primary text-white' : '')}
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
+        {navItems[user.role]?.map((item) => (
+          <li key={item.path}>
+            <NavLink
+              to={item.path}
+              className={({ isActive }) => (isActive ? 'bg-primary text-white' : '')}
+            >
+              {item.label}
+            </NavLink>
+          </li>
+        ))}
         <li className="mt-auto">
           <button onClick={logout} className="flex items-center">
             <LogOut className="mr-2" size={20} /> Logout

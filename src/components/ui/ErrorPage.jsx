@@ -1,23 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Lottie from 'lottie-react';
-import errorAnimation from '../../animations/Error.json'; // adjust the path as needed
+import errorAnimation from '../../animations/Error.json';
 
-function ErrorPage({ message = "Something went wrong.", code = 404 }) {
+const ErrorPage = ({ message = 'Something went wrong', code = 500, redirectUrl }) => {
+  useEffect(() => {
+    if (redirectUrl) {
+      const timer = setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [redirectUrl]);
+
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-dark-bluish-black text-white px-4 text-center overflow-hidden">
-      <div className="w-60 sm:w-72 md:w-60 lg:w-60 mb-4">
-        <Lottie animationData={errorAnimation} loop={true} />
+    <div className="min-h-screen flex items-center justify-center bg-base-200">
+      <div className="card w-full max-w-md shadow-xl bg-base-100 text-center">
+        <div className="card-body">
+          <Lottie animationData={errorAnimation} loop={true} className="w-48 mx-auto" />
+          <h2 className="text-2xl font-bold">Error {code}</h2>
+          <p className="mt-2">{message}</p>
+          {redirectUrl && (
+            <p className="mt-4">
+              Redirecting in 3 seconds... or{' '}
+              <a href={redirectUrl} className="link link-primary">
+                click here
+              </a>
+            </p>
+          )}
+        </div>
       </div>
-      <h1 className="text-4xl sm:text-5xl font-bold text-highlight-orange mb-1">{code}</h1>
-      <p className="text-base sm:text-lg md:text-xl mb-4 px-2">{message}</p>
-      <a
-        href="/"
-        className="px-5 py-2  bg-highlight-orange text-white rounded-xl shadow-md hover:bg-orange-700 transition text-sm sm:text-base"
-      >
-        Go Home
-      </a>
     </div>
   );
-}
+};
 
 export default ErrorPage;

@@ -14,7 +14,11 @@ export const AuthProvider = ({ children }) => {
       if (isAuthenticated()) {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          if (parsedUser.role === 'buyer') {
+            window.location.href = 'http://localhost:5173';
+          }
         }
       }
       setLoading(false);
@@ -27,10 +31,17 @@ export const AuthProvider = ({ children }) => {
       const response = await login({ email, password });
       const { token, data } = response;
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({ role: data.role, email }));
-      setUser({ role: data.role, email });
+      const userData = { role: data.role, email };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      console.log('Login successful:', { token, userData }); // Debug log
+      if (data.role === 'buyer') {
+        window.location.href = 'http://localhost:5173';
+        return { success: true, message: 'Login successful! Redirecting to buyer site...' };
+      }
       return { success: true, message: 'Login successful!' };
     } catch (error) {
+      console.error('Login error:', error); // Debug log
       if (error.isBigError) {
         navigate('/error', { state: { message: error.message, code: error.code } });
         return { success: false };
@@ -40,12 +51,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   const handleRegister = async ({ email, password, role, name, phone }) => {
+    if (role !== 'seller') {
+      return { success: false, message: 'Registration is only available for sellers in this panel.' };
+    }
     try {
-      const response = await register({ email, password, role, name, phone });
+      const response = await register({ email, password, role: 'seller', name, phone });
       const { token, data } = response;
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({ role, email }));
-      setUser({ role, email });
+      const userData = { role: 'seller', email };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
       return { success: true, message: 'Registration successful!' };
     } catch (error) {
       if (error.isBigError) {
@@ -59,6 +74,7 @@ export const AuthProvider = ({ children }) => {
   const handleLogout = () => {
     logout();
     setUser(null);
+    navigate('/login');
   };
 
   return (
