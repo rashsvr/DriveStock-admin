@@ -1,26 +1,27 @@
-import React from 'react';
+import React from "react";
+import PageContainer from "./PageContainer"; // adjust path accordingly
 
 const AdminAnalytics = () => {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Analytics</h2>
-      <div className="alert alert-info">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          className="stroke-current shrink-0 w-6 h-6"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <span>Analytics feature coming soon with the next backend update.</span>
+    <PageContainer
+      title="Analytics"
+      alert={{
+        type: "info",
+        message: "Analytics feature coming soon with the next backend update.",
+        onClose: null, // or add a handler
+      }}
+    >
+      <div className="grid lg:grid-cols-12 lg:grid-rows-7  gap-10 ">
+        <div className="bento-tile lg:col-span-3 lg:row-span-3 lg:col-start-10 lg:row-start-1">13</div>
+        <div className="bento-tile lg:col-span-9 lg:row-span-5 lg:col-start-1 lg:row-start-3">19</div>
+        <div className="bento-tile lg:col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">20</div>
+        <div className="bento-tile lg:col-span-2 lg:row-span-2 lg:col-start-3 lg:row-start-1">22</div>
+        <div className="bento-tile lg:col-span-3 lg:row-span-4 lg:col-start-10 lg:row-start-4">26</div>
+        <div className="bento-tile lg:col-span-3 lg:col-start-7 lg:row-start-1">29</div>
+        <div className="bento-tile lg:col-span-3 lg:col-start-7 lg:row-start-2">30</div>
+        <div className="bento-tile lg:col-span-2 lg:row-span-2 lg:col-start-5 lg:row-start-1">31</div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

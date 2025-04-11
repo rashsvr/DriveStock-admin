@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* Add to your global CSS or apply via Tailwind config/plugin */
+.bento-tile {
+  @apply bg-[#1A2526] border border-[#2DD4BF] rounded-2xl p-4 shadow text-white 
+         transition-transform duration-300 ease-in-out 
+         hover:scale-[1.02] hover:shadow-[0_0_6px_#2DD4BF];
+}

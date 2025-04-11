@@ -1,7 +1,7 @@
+// pages/AdminBuyers.jsx
 import React, { useState, useEffect } from 'react';
 import adminApi from '../../services/adminApi';
-import Alert from './Alert';
-import LoadingAnimation from '../function/LoadingAnimation';
+import Table from './Table';
 
 const AdminBuyers = () => {
   const [buyers, setBuyers] = useState([]);
@@ -24,11 +24,11 @@ const AdminBuyers = () => {
     }
   };
 
-  const handleDelete = async (buyerId) => {
+  const handleDelete = async (buyer) => {
     if (!window.confirm('Are you sure you want to delete this buyer?')) return;
     setLoading(true);
     try {
-      await adminApi.deleteBuyer(buyerId);
+      await adminApi.deleteBuyer(buyer._id);
       setAlert({ type: 'success', message: 'Buyer deleted successfully' });
       fetchBuyers();
     } catch (error) {
@@ -38,41 +38,33 @@ const AdminBuyers = () => {
     }
   };
 
-  if (loading) return <LoadingAnimation />;
+  const columns = [
+    { key: 'email', label: 'Email' },
+    { key: 'name', label: 'Name' },
+    { key: 'status', label: 'Status', hideOnMobile: true },
+  ];
+
+  const actions = [
+    {
+      label: 'Delete',
+      onClick: handleDelete,
+      className: 'btn-error text-white',
+    },
+  ];
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Manage Buyers</h2>
-      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
-      <div className="overflow-x-auto">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {buyers.map((buyer) => (
-              <tr key={buyer._id}>
-                <td>{buyer.email}</td>
-                <td>{buyer.name}</td>
-                <td>{buyer.status}</td>
-                <td>
-                  <button
-                    onClick={() => handleDelete(buyer._id)}
-                    className="btn btn-error btn-sm"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="p-4 text-white" style={{ backgroundColor: '#1A2526' }}>
+      <h2 className="text-2xl font-bold mb-4 text-highlight-blue">Manage Buyers</h2>
+      <Table
+        data={buyers}
+        columns={columns}
+        actions={actions}
+        loading={loading}
+        alert={alert}
+        setAlert={setAlert}
+        emptyMessage="No buyers found."
+        itemsPerPage={5} // Smaller for demo; adjust as needed
+      />
     </div>
   );
 };

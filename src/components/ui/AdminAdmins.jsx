@@ -1,6 +1,9 @@
+// pages/AdminAdmins.jsx
 import React, { useState, useEffect } from 'react';
 import adminApi from '../../services/adminApi';
-import Alert from './Alert';
+import PageContainer from './PageContainer';
+import Table from './Table';
+import ConfirmationModal from './ConfirmationModal';
 import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminAdmins = () => {
@@ -11,6 +14,7 @@ const AdminAdmins = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, adminId: null });
 
   useEffect(() => {
     fetchAdmins();
@@ -22,7 +26,7 @@ const AdminAdmins = () => {
       const res = await adminApi.getAllAdmins();
       setAdmins(res.data);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message });
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
     } finally {
       setLoading(false);
     }
@@ -52,163 +56,165 @@ const AdminAdmins = () => {
     try {
       if (isEditing) {
         await adminApi.updateAdmin(editId, formData);
-        setAlert({ type: 'success', message: 'Admin updated successfully' });
+        setAlert({ type: 'success', message: 'Admin updated successfully', onClose: () => setAlert(null) });
       } else {
         await adminApi.createAdmin(formData);
-        setAlert({ type: 'success', message: 'Admin created successfully' });
+        setAlert({ type: 'success', message: 'Admin created successfully', onClose: () => setAlert(null) });
       }
-      fetchAdmins();
+      await fetchAdmins(); // Immediate refetch for latest data
       setModalOpen(false);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message });
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this admin?')) return;
+  const handleDelete = (admin) => {
+    setConfirmModal({ isOpen: true, adminId: admin._id });
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmModal.adminId) return;
     setLoading(true);
     try {
-      await adminApi.deleteAdmin(id);
-      setAlert({ type: 'success', message: 'Admin deleted successfully' });
-      fetchAdmins();
+      await adminApi.deleteAdmin(confirmModal.adminId);
+      setAlert({ type: 'success', message: 'Admin deleted successfully', onClose: () => setAlert(null) });
+      await fetchAdmins(); // Immediate refetch for latest data
     } catch (error) {
-      setAlert({ type: 'error', message: error.message });
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
     } finally {
       setLoading(false);
+      setConfirmModal({ isOpen: false, adminId: null });
     }
   };
 
-  if (loading) return <LoadingAnimation />;
+  const columns = [
+    { key: 'email', label: 'Email' },
+    { key: 'name', label: 'Name' },
+    { key: 'phone', label: 'Phone', hideOnMobile: true },
+    { key: 'status', label: 'Status', hideOnMobile: true },
+  ];
+
+  const actions = [
+    {
+      label: 'Edit',
+      onClick: openEditModal,
+      className: 'bg-highlight-blue text-white',
+    },
+    {
+      label: 'Delete',
+      onClick: handleDelete,
+      className: 'btn-error text-white',
+    },
+  ];
 
   return (
-    <div className="p-4 text-white" style={{ backgroundColor: '#1A2526' }}>
-      <h2 className="text-2xl font-bold mb-4 text-highlight-blue">Manage Admins</h2>
+    <PageContainer title="Manage Admins" alert={alert}>
+      {loading && <LoadingAnimation />}
+      {!loading && (
+        <>
+          <button
+            onClick={openCreateModal}
+            className="btn btn-primary mb-4 bg-highlight-orange border-none hover:bg-orange-600"
+          >
+            Add Admin
+          </button>
 
-      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+          {modalOpen && (
+            <dialog open className="modal">
+              <div className="modal-box bg-[#1A2526] text-white max-w-md mx-auto p-4 sm:p-6">
+                <h3 className="font-bold text-lg sm:text-xl mb-4">
+                  {isEditing ? 'Edit Admin' : 'Create Admin'}
+                </h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="label text-sm sm:text-base">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="input input-bordered w-full text-sm sm:text-base"
+                      required
+                    />
+                  </div>
+                  {!isEditing && (
+                    <div>
+                      <label className="label text-sm sm:text-base">Password</label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="input input-bordered w-full text-sm sm:text-base"
+                        required
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="label text-sm sm:text-base">Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="input input-bordered w-full text-sm sm:text-base"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="label text-sm sm:text-base">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="input input-bordered w-full text-sm sm:text-base"
+                      required
+                    />
+                  </div>
+                  <div className="modal-action flex justify-between">
+                    <button
+                      type="submit"
+                      className="btn bg-highlight-teal border-none hover:bg-teal-600 text-sm sm:text-base"
+                    >
+                      {isEditing ? 'Update' : 'Create'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost text-sm sm:text-base"
+                      onClick={() => setModalOpen(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </dialog>
+          )}
 
-      <button
-        onClick={openCreateModal}
-        className="btn btn-primary mb-4 bg-highlight-orange border-none"
-      >
-        Add Admin
-      </button>
+          <ConfirmationModal
+            isOpen={confirmModal.isOpen}
+            onClose={() => setConfirmModal({ isOpen: false, adminId: null })}
+            onConfirm={confirmDelete}
+            title="Confirm Delete"
+            message="Are you sure you want to delete this admin?"
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
 
-      {/* Modal */}
-      {modalOpen && (
-        <dialog open className="modal">
-          <div className="modal-box bg-[#1A2526] text-white">
-            <h3 className="font-bold text-lg mb-4">{isEditing ? 'Edit Admin' : 'Create Admin'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="label">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="input input-bordered w-full"
-                  required
-                />
-              </div>
-              {!isEditing && (
-                <div>
-                  <label className="label">Password</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="input input-bordered w-full"
-                    required
-                  />
-                </div>
-              )}
-              <div>
-                <label className="label">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="input input-bordered w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="input input-bordered w-full"
-                  required
-                />
-              </div>
-              <div className="modal-action flex justify-between">
-                <button type="submit" className="btn bg-highlight-teal border-none">
-                  {isEditing ? 'Update' : 'Create'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setModalOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </dialog>
+          <Table
+            data={admins}
+            columns={columns}
+            actions={actions}
+            loading={loading}
+            emptyMessage="No admins found."
+            itemsPerPage={5}
+          />
+        </>
       )}
-
-      <div className="overflow-x-auto rounded-md">
-        <table className="table w-full table-zebra">
-          <thead className="text-highlight-blue">
-            <tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {admins.map((admin) => (
-              <tr key={admin._id}>
-                <td>{admin.email}</td>
-                <td>{admin.name}</td>
-                <td>{admin.phone}</td>
-                <td>{admin.status}</td>
-                <td>
-                  <button
-                    onClick={() => openEditModal(admin)}
-                    className="btn btn-sm bg-highlight-blue text-white mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(admin._id)}
-                    className="btn btn-sm btn-error text-white"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {admins.length === 0 && (
-              <tr>
-                <td colSpan="5" className="text-center text-gray-400">
-                  No admins found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </PageContainer>
   );
 };
 

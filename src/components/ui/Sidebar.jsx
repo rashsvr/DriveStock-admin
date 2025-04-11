@@ -10,13 +10,14 @@ const Sidebar = () => {
 
   const navItems = {
     admin: [
+      { path: '/dashboard/analytics', label: 'Analytics' },
       { path: '/dashboard/admins', label: 'Manage Admins' },
       { path: '/dashboard/couriers', label: 'Manage Couriers' },
       { path: '/dashboard/sellers', label: 'Manage Sellers' },
       { path: '/dashboard/buyers', label: 'Manage Buyers' },
       { path: '/dashboard/categories', label: 'Manage Categories' },
       { path: '/dashboard/profile', label: 'My Profile' },
-      { path: '/dashboard/analytics', label: 'Analytics' },
+     
     ],
     seller: [
       { path: '/dashboard/products', label: 'My Products' },
