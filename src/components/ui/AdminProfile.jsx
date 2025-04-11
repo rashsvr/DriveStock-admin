@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import sharedApi from '../../services/sharedApi';
 import Alert from './Alert';
 import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminProfile = () => {
+  const { user } = useContext(AuthContext); // Get initial user data
   const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({ name: '', phone: '', password: '', profileImage: '' });
   const [alert, setAlert] = useState(null);
@@ -17,8 +19,22 @@ const AdminProfile = () => {
     setLoading(true);
     try {
       const data = await sharedApi.getProfile();
-      setProfile(data.data);
-      setFormData({ name: data.data.name, phone: data.data.phone, password: '', profileImage: data.data.profileImage || '' });
+      const fullProfile = data.data;
+      setProfile(fullProfile);
+      setFormData({
+        name: fullProfile.name || '',
+        phone: fullProfile.phone || '',
+        password: '',
+        profileImage: fullProfile.profileImage || '',
+      });
+      // Update localStorage with full profile data
+      localStorage.setItem('user', JSON.stringify({
+        userId: fullProfile._id,
+        role: fullProfile.role,
+        email: fullProfile.email,
+        name: fullProfile.name,
+        phone: fullProfile.phone,
+      }));
     } catch (error) {
       setAlert({ type: 'error', message: error.message });
     } finally {
@@ -52,9 +68,16 @@ const AdminProfile = () => {
     setLoading(true);
     setAlert(null);
     try {
-      await sharedApi.updateProfile(formData);
+      const updatedProfile = await sharedApi.updateProfile(formData);
       setAlert({ type: 'success', message: 'Profile updated successfully' });
-      fetchProfile();
+      setProfile(updatedProfile.data);
+      localStorage.setItem('user', JSON.stringify({
+        userId: updatedProfile.data._id,
+        role: updatedProfile.data.role,
+        email: updatedProfile.data.email,
+        name: updatedProfile.data.name,
+        phone: updatedProfile.data.phone,
+      }));
     } catch (error) {
       setAlert({ type: 'error', message: error.message });
     } finally {
@@ -77,7 +100,7 @@ const AdminProfile = () => {
   };
 
   if (loading) return <LoadingAnimation />;
-  if (!profile) return <div>No profile data available</div>;
+  if (!user) return <div>Please log in to view your profile.</div>;
 
   return (
     <div>
@@ -89,7 +112,7 @@ const AdminProfile = () => {
             <label className="label">Email (Read-only)</label>
             <input
               type="email"
-              value={profile.email}
+              value={user.email}
               className="input input-bordered w-full"
               disabled
             />

@@ -70,13 +70,15 @@ const AdminSellers = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Manage Sellers</h2>
+    <div className="p-4 text-white" style={{ backgroundColor: '#1A2526' }}>
+      <h2 className="text-2xl font-bold mb-4 text-highlight-blue">Manage Sellers</h2>
+
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
-      <h3 className="text-xl font-semibold mb-2">Pending Sellers</h3>
-      <div className="overflow-x-auto mb-6">
-        <table className="table w-full">
-          <thead>
+
+      <h3 className="text-xl font-semibold mb-2 text-highlight-orange">Pending Sellers</h3>
+      <div className="overflow-x-auto mb-6 rounded-md">
+        <table className="table w-full table-zebra">
+          <thead className="text-highlight-blue">
             <tr>
               <th>Email</th>
               <th>Name</th>
@@ -93,26 +95,34 @@ const AdminSellers = () => {
                 <td>
                   <button
                     onClick={() => handleApprove(seller._id)}
-                    className="btn btn-success btn-sm mr-2"
+                    className="btn btn-sm bg-highlight-teal text-white mr-2"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleDelete(seller._id)}
-                    className="btn btn-error btn-sm"
+                    className="btn btn-sm btn-error text-white"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
             ))}
+            {pendingSellers.length === 0 && (
+              <tr>
+                <td colSpan="4" className="text-center text-gray-400">
+                  No pending sellers.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <h3 className="text-xl font-semibold mb-2">Approved Sellers</h3>
-      <div className="overflow-x-auto">
-        <table className="table w-full">
-          <thead>
+
+      <h3 className="text-xl font-semibold mb-2 text-highlight-orange">Approved Sellers</h3>
+      <div className="overflow-x-auto rounded-md">
+        <table className="table w-full table-zebra">
+          <thead className="text-highlight-blue">
             <tr>
               <th>Email</th>
               <th>Name</th>
@@ -129,13 +139,20 @@ const AdminSellers = () => {
                 <td>
                   <button
                     onClick={() => handleDelete(seller._id)}
-                    className="btn btn-error btn-sm"
+                    className="btn btn-sm btn-error text-white"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
             ))}
+            {sellers.length === 0 && (
+              <tr>
+                <td colSpan="4" className="text-center text-gray-400">
+                  No approved sellers.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

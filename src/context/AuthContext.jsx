@@ -29,19 +29,20 @@ export const AuthProvider = ({ children }) => {
   const handleLogin = async (email, password) => {
     try {
       const response = await login({ email, password });
-      const { token, data } = response;
+      const { token, userId, role } = response.data; // Updated to match new response
       localStorage.setItem('token', token);
-      const userData = { role: data.role, email };
+      const userData = { userId, role, email }; // Store more details
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      console.log('Login successful:', { token, userData }); // Debug log
-      if (data.role === 'buyer') {
+      console.log('Login successful:', { token, userData });
+      if (role === 'buyer') {
         window.location.href = 'http://localhost:5173';
         return { success: true, message: 'Login successful! Redirecting to buyer site...' };
       }
+      navigate('/dashboard'); // Redirect to dashboard immediately
       return { success: true, message: 'Login successful!' };
     } catch (error) {
-      console.error('Login error:', error); // Debug log
+      console.error('Login error:', error);
       if (error.isBigError) {
         navigate('/error', { state: { message: error.message, code: error.code } });
         return { success: false };
@@ -56,11 +57,12 @@ export const AuthProvider = ({ children }) => {
     }
     try {
       const response = await register({ email, password, role: 'seller', name, phone });
-      const { token, data } = response;
+      const { token, userId } = response.data; // Updated to match new response
       localStorage.setItem('token', token);
-      const userData = { role: 'seller', email };
+      const userData = { userId, role: 'seller', email, name, phone };
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      navigate('/dashboard');
       return { success: true, message: 'Registration successful!' };
     } catch (error) {
       if (error.isBigError) {
