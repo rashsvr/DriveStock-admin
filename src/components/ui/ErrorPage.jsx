@@ -1,35 +1,25 @@
-import React, { useEffect } from 'react';
-import Lottie from 'lottie-react';
-import errorAnimation from '../../animations/Error.json';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import PageContainer from './PageContainer';
 
-const ErrorPage = ({ message = 'Something went wrong', code = 500, redirectUrl }) => {
-  useEffect(() => {
-    if (redirectUrl) {
-      const timer = setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [redirectUrl]);
-
+const ErrorPage = ({ message = 'An error occurred', code = 500, redirectUrl }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
-      <div className="card w-full max-w-md shadow-xl bg-base-100 text-center">
-        <div className="card-body">
-          <Lottie animationData={errorAnimation} loop={true} className="w-48 mx-auto" />
-          <h2 className="text-2xl font-bold">Error {code}</h2>
-          <p className="mt-2">{message}</p>
-          {redirectUrl && (
-            <p className="mt-4">
-              Redirecting in 3 seconds... or{' '}
-              <a href={redirectUrl} className="link link-primary">
-                click here
-              </a>
-            </p>
-          )}
-        </div>
+    <PageContainer title={`Error ${code}`}>
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-red-500 mb-4">{message}</h3>
+        {redirectUrl ? (
+          <p className="text-white">
+            <a href={redirectUrl} className="text-highlight-blue underline">
+              Go to the correct site
+            </a>
+          </p>
+        ) : (
+          <Link to="/dashboard" className="btn btn-primary mt-4">
+            Back to Dashboard
+          </Link>
+        )}
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

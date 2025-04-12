@@ -1,12 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { LogOut } from 'lucide-react';
 
 const Sidebar = () => {
-  const { user, logout } = useContext(AuthContext);
-
-  console.log('Sidebar user:', user); // Debug log
+  const { user, logout } = useAuth();
 
   const navItems = {
     admin: [
@@ -17,14 +15,17 @@ const Sidebar = () => {
       { path: '/dashboard/buyers', label: 'Manage Buyers' },
       { path: '/dashboard/categories', label: 'Manage Categories' },
       { path: '/dashboard/profile', label: 'My Profile' },
-     
     ],
     seller: [
+      { path: '/dashboard/analytics', label: 'Analytics' },
       { path: '/dashboard/products', label: 'My Products' },
       { path: '/dashboard/orders', label: 'My Orders' },
+      { path: '/dashboard/profile', label: 'My Profile' },
     ],
     courier: [
+      { path: '/dashboard/analytics', label: 'Analytics' },
       { path: '/dashboard/deliveries', label: 'My Deliveries' },
+      { path: '/dashboard/profile', label: 'My Profile' },
     ],
   };
 

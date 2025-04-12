@@ -1,15 +1,21 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Alert from './Alert';
 import LoadingAnimation from '../function/LoadingAnimation';
 
 const Login = () => {
-  const { login } = useContext(AuthContext);
+  const { login, isAuthenticated, isAuthChecked } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  if (!isAuthChecked) return <LoadingAnimation />;
+
+  if (isAuthenticated()) {
+    return <Navigate to="/dashboard/analytics" replace />;
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,66 +25,73 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setAlert(null);
-    const { success, message } = await login(formData.email, formData.password);
-    setLoading(false);
-    if (success) {
-      setAlert({ type: 'success', message });
+    try {
+      const { data } = await login({ email: formData.email, password: formData.password });
+      setAlert({ type: 'success', message: 'Login successful!' });
       setTimeout(() => {
-        navigate('/dashboard'); // Buyer redirection handled in AuthContext
+        // Redirect to analytics for admin, seller, courier
+        navigate('/dashboard/analytics');
       }, 1000);
-    } else if (message) {
-      setAlert({ type: 'error', message });
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.message || 'Login failed. Please check your email and password.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
-      <div className="card w-full max-w-md shadow-xl bg-base-100">
-        <div className="card-body">
-          <h2 className="card-title text-2xl text-center">Login</h2>
-          {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
-          <form onSubmit={handleSubmit}>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Email</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="input input-bordered"
-                required
-              />
-            </div>
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Password</span>
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input input-bordered"
-                required
-              />
-            </div>
-            <div className="card-actions justify-center mt-4">
-              <button type="submit" className="btn btn-primary w-full">
-                Login
-              </button>
-            </div>
-            <p className="text-center mt-4">
-              Don't have an account?{' '}
-              <a href="/register" className="link link-primary">
-                Register (Sellers Only)
-              </a>
-            </p>
-          </form>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#1A2526] px-4">
+      <div className="w-full max-w-md rounded-2xl shadow-2xl bg-[#121D1E] p-8 space-y-6">
+        <h2 className="text-3xl font-semibold text-center text-white">Welcome Back</h2>
+        {alert && (
+          <Alert
+            type={alert.type}
+            message={alert.message}
+            onClose={() => setAlert(null)}
+          />
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full btn bg-highlight-orange text-black hover:bg-teal-400 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-400">
+          Don't have an account?{' '}
+          <a href="/register" className="text-highlight-blue hover:underline">
+            Register (Sellers Only)
+          </a>
+        </p>
       </div>
     </div>
   );

@@ -1,14 +1,22 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Sidebar from './Sidebar';
 import LoadingAnimation from '../function/LoadingAnimation';
 
 const Dashboard = ({ children }) => {
-  const { user, loading } = useContext(AuthContext);
+  const { user, isAuthChecked } = useAuth();
 
-  if (loading) return <LoadingAnimation />;
+  if (!isAuthChecked) return <LoadingAnimation />;
 
-  if (!user || user.role === 'buyer') return null; // ProtectedRoute handles this
+  if (!user || user.role === 'buyer') {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to analytics for direct /dashboard access
+  if (!children) {
+    return <Navigate to="/dashboard/analytics" replace />;
+  }
 
   return (
     <div className="drawer lg:drawer-open">

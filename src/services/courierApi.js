@@ -1,99 +1,90 @@
-import axios from 'axios';
+import apiClient, { isAuthenticated, apiRequest, validateInput } from './apiClient';
+import Joi from 'joi';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+/**
+ * Gets assigned or available orders
+ * @param {{ page?: number, limit?: number }} params - Pagination parameters
+ * @returns {Promise<{ success: boolean, data: Array }>}
+ */
+export const getAssignedOrders = async ({ page = 1, limit = 10 } = {}) => {
+  const schema = Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).optional(),
+  });
+  validateInput({ page, limit }, schema);
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor (inspired by api.js)
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    let message = 'An unexpected error occurred';
-    let code = 500;
-    let isBigError = false;
-
-    if (!navigator.onLine) {
-      message = 'No internet connection. Please check your network.';
-      code = 0;
-      isBigError = true;
-    } else if (status === 400 && !error.response?.data?.message) {
-      message = 'Bad request. Something went wrong with the system.';
-      code = 400;
-      isBigError = true;
-    } else if (status === 500) {
-      message = 'Internal server error. Please try again later.';
-      code = 500;
-      isBigError = true;
-    } else if (status === 400) {
-      message = error.response?.data?.message || 'Invalid request. Please check your input.';
-      code = 400;
-    } else if (status === 401) {
-      message = error.response?.data?.message || 'Invalid credentials. Please try again.';
-      code = 401;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    } else if (status === 403) {
-      message = error.response?.data?.message || 'Access denied. Insufficient permissions.';
-      code = 403;
-    } else if (status === 404) {
-      message = error.response?.data?.message || 'Resource not found.';
-      code = 404;
-    } else if (status === 409) {
-      message = error.response?.data?.message || 'Resource conflict.';
-      code = 409;
-    }
-
-    throw { message, code, isBigError, originalError: error };
-  }
-);
-
-// Inspired utilities
-const isAuthenticated = () => !!localStorage.getItem('token');
-const handleApiError = (error) => {
-  console.error('API Error:', error.message || error);
-  throw error;
-};
-const apiRequest = async (requestFn) => {
-  try {
-    return await requestFn();
-  } catch (error) {
-    handleApiError(error);
-  }
-};
-
-// Courier Order Management
-export const getAssignedOrders = async ({ page = 1, limit = 10 }) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to view assigned orders', code: 401, isBigError: false };
   const response = await apiClient.get('/courier/orders', { params: { page, limit } });
   return response.data;
 };
 
-export const updateOrderStatus = async (orderId, { status }) => {
+/**
+ * Gets an order by ID
+ * @param {string} orderId - Order ID
+ * @returns {Promise<{ success: boolean, data: Object }>}
+ */
+export const getOrderById = async (orderId) => {
+  const schema = Joi.object({
+    orderId: Joi.string().required(),
+  });
+  validateInput({ orderId }, schema);
+
+  if (!isAuthenticated()) throw { message: 'User must be logged in to view an order', code: 401, isBigError: false };
+  const response = await apiClient.get(`/courier/order/${orderId}`);
+  return response.data;
+};
+
+/**
+ * Updates order status
+ * @param {string} orderId - Order ID
+ * @param {{ status: string, reason?: string }} statusData - Status and optional reason
+ * @returns {Promise<{ success: boolean, message: string, trackingNumber?: string }>}
+ */
+export const updateOrderStatus = async (orderId, { status, reason }) => {
+  const schema = Joi.object({
+    orderId: Joi.string().required(),
+    status: Joi.string().valid('Picked Up', 'In Transit', 'Out for Delivery', 'Delivered', 'Failed Delivery').required(),
+    reason: Joi.string().when('status', { is: 'Failed Delivery', then: Joi.required(), otherwise: Joi.optional() }),
+  });
+  validateInput({ orderId, status, reason }, schema);
+
   if (!isAuthenticated()) throw { message: 'User must be logged in to update order status', code: 401, isBigError: false };
-  const response = await apiClient.put(`/courier/orders/${orderId}/status`, { status });
+  const response = await apiClient.put(`/courier/order/${orderId}/status`, { status, reason });
+  return response.data;
+};
+
+/**
+ * Reports a delivery issue
+ * @param {string} orderId - Order ID
+ * @param {{ reason: string }} issueData - Reason for the issue
+ * @returns {Promise<{ success: boolean, message: string }>}
+ */
+export const reportDeliveryIssue = async (orderId, { reason }) => {
+  const schema = Joi.object({
+    orderId: Joi.string().required(),
+    reason: Joi.string().required(),
+  });
+  validateInput({ orderId, reason }, schema);
+
+  if (!isAuthenticated()) throw { message: 'User must be logged in to report an issue', code: 401, isBigError: false };
+  const response = await apiClient.post(`/courier/order/${orderId}/report-issue`, { reason });
+  return response.data;
+};
+
+/**
+ * Gets courier analytics
+ * @returns {Promise<{ success: boolean, data: { statusBreakdown: Object, successRate: string, averageDeliveryTime: string } }>}
+ */
+export const getAnalytics = async () => {
+  if (!isAuthenticated()) throw { message: 'User must be logged in to view analytics', code: 401, isBigError: false };
+  const response = await apiClient.get('/courier/analytics');
   return response.data;
 };
 
 export default {
   getAssignedOrders: (params) => apiRequest(() => getAssignedOrders(params)),
+  getOrderById: (orderId) => apiRequest(() => getOrderById(orderId)),
   updateOrderStatus: (orderId, statusData) => apiRequest(() => updateOrderStatus(orderId, statusData)),
+  reportDeliveryIssue: (orderId, issueData) => apiRequest(() => reportDeliveryIssue(orderId, issueData)),
+  getAnalytics: () => apiRequest(() => getAnalytics()),
 };

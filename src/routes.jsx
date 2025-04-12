@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthContext } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { LoadingWrapper } from './components/function/LoadingWrapper';
 import Login from './components/ui/Login';
 import Register from './components/ui/Register';
@@ -11,18 +11,21 @@ import AdminCouriers from './components/ui/AdminCouriers';
 import AdminSellers from './components/ui/AdminSellers';
 import AdminBuyers from './components/ui/AdminBuyers';
 import AdminCategories from './components/ui/AdminCategories';
-import AdminProfile from './components/ui/AdminProfile';
+import UserProfile from './components/ui/UserProfile';
 import AdminAnalytics from './components/ui/AdminAnalytics';
+import SellerProducts from './components/ui/SellerProducts';
+import SellerOrders from './components/ui/SellerOrders';
+import SellerAnalytics from './components/ui/SellerAnalytics';
+import CourierDeliveries from './components/ui/CourierDeliveries';
+import CourierAnalytics from './components/ui/CourierAnalytics';
 import LoadingAnimation from './components/function/LoadingAnimation';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading } = useContext(AuthContext);
+  const { user, isAuthChecked } = useAuth();
 
-  if (loading) return <LoadingAnimation />;
+  if (!isAuthChecked) return <LoadingAnimation />;
 
-  console.log('ProtectedRoute check:', { user, allowedRoles }); // Debug log
-
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
 
   if (!allowedRoles.includes(user.role)) {
     if (user.role === 'buyer') {
@@ -40,24 +43,48 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-const AppRoutes = () => {
-  const { loading } = useContext(AuthContext);
+const AnalyticsRoute = () => {
+  const { user } = useAuth();
+  const analyticsComponents = {
+    admin: AdminAnalytics,
+    seller: SellerAnalytics,
+    courier: CourierAnalytics,
+  };
+  const Component = analyticsComponents[user?.role] || ErrorPage;
+  return (
+    <ProtectedRoute allowedRoles={['admin', 'seller', 'courier']}>
+      <Dashboard>
+        <Component
+          {...(Component === ErrorPage && {
+            message: 'Invalid Role',
+            code: 403,
+          })}
+        />
+      </Dashboard>
+    </ProtectedRoute>
+  );
+};
 
-  if (loading) return <LoadingAnimation />;
+const AppRoutes = () => {
+  const { isAuthChecked } = useAuth();
+
+  if (!isAuthChecked) return <LoadingAnimation />;
 
   return (
     <LoadingWrapper>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        {/* Dashboard Routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['admin', 'seller', 'courier']}>
               <Dashboard />
             </ProtectedRoute>
           }
         />
+        <Route path="/dashboard/analytics" element={<AnalyticsRoute />} />
         <Route
           path="/dashboard/admins"
           element={
@@ -111,25 +138,45 @@ const AppRoutes = () => {
         <Route
           path="/dashboard/profile"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['admin', 'seller', 'courier']}>
               <Dashboard>
-                <AdminProfile />
+                <UserProfile />
               </Dashboard>
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dashboard/analytics"
+          path="/dashboard/products"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['seller']}>
               <Dashboard>
-                <AdminAnalytics />
+                <SellerProducts />
+              </Dashboard>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            <ProtectedRoute allowedRoles={['seller']}>
+              <Dashboard>
+                <SellerOrders />
+              </Dashboard>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/deliveries"
+          element={
+            <ProtectedRoute allowedRoles={['courier']}>
+              <Dashboard>
+                <CourierDeliveries />
               </Dashboard>
             </ProtectedRoute>
           }
         />
         <Route path="/error" element={<ErrorPage />} />
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<ErrorPage message="Page Not Found" code={404} />} />
       </Routes>
     </LoadingWrapper>

@@ -1,105 +1,55 @@
-import axios from 'axios';
+import apiClient, { isAuthenticated, apiRequest, validateInput } from './apiClient';
+import Joi from 'joi';
 
-const API_BASE_URL = 'http://localhost:3000/api';
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    console.log('Request headers:', config.headers); // Debug log
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    let message = 'An unexpected error occurred';
-    let code = 500;
-    let isBigError = false;
-
-    if (!navigator.onLine) {
-      message = 'No internet connection. Please check your network.';
-      code = 0;
-      isBigError = true;
-    } else if (status === 400 && !error.response?.data?.message) {
-      message = 'Bad request. Something went wrong with the system.';
-      code = 400;
-      isBigError = true;
-    } else if (status === 500) {
-      message = 'Internal server error. Please try again later.';
-      code = 500;
-      isBigError = true;
-    } else if (status === 400) {
-      message = error.response?.data?.message || 'Invalid request. Please check your input.';
-      code = 400;
-    } else if (status === 401) {
-      message = error.response?.data?.message || 'Session expired. Please log in again.';
-      code = 401;
-      if (error.response?.data?.message === 'No token, authorization denied' || 
-          error.response?.data?.message === 'Token is not valid') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
-    } else if (status === 403) {
-      message = error.response?.data?.message || 'Access denied. Insufficient permissions.';
-      code = 403;
-    } else if (status === 404) {
-      message = error.response?.data?.message || 'Resource not found.';
-      code = 404;
-    } else if (status === 409) {
-      message = error.response?.data?.message || 'Resource conflict.';
-      code = 409;
-    }
-
-    console.error('API Response Error:', { status, message, error });
-    throw { message, code, isBigError, originalError: error };
-  }
-);
-
-export const isAuthenticated = () => !!localStorage.getItem('token');
-
+/**
+ * Logs out the user by clearing localStorage and redirecting
+ */
 export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   window.location.href = '/login';
 };
 
-const handleApiError = (error) => {
-  console.error('API Error:', error.message || error);
-  throw error;
-};
-
-const apiRequest = async (requestFn) => {
-  try {
-    return await requestFn();
-  } catch (error) {
-    handleApiError(error);
-  }
-};
-
+/**
+ * Logs in a user
+ * @param {{ email: string, password: string }} credentials - User credentials
+ * @returns {Promise<{ success: boolean, data: { userId: string, role: string, token: string } }>}
+ */
 export const login = async ({ email, password }) => {
+  const schema = Joi.object({
+    email: Joi.string().email({ tlds: { allow: false } }).required(),
+    password: Joi.string().min(6).required(),
+  });
+  validateInput({ email, password }, schema);
+
   const response = await apiClient.post('/auth/login', { email, password });
-  return response.data; // { success: true, data: { userId, role, token } }
+  return response.data;
 };
 
+/**
+ * Registers a new user
+ * @param {{ email: string, password: string, role: string, name: string, phone: string }} userData - User details
+ * @returns {Promise<{ success: boolean, data: { userId: string, token: string } }>}
+ */
 export const register = async ({ email, password, role, name, phone }) => {
+  const schema = Joi.object({
+    email: Joi.string().email({ tlds: { allow: false } }).required(),
+    password: Joi.string().min(6).required(),
+    role: Joi.string().valid('seller', 'buyer').required(),
+    name: Joi.string().min(2).required(),
+    phone: Joi.string().pattern(/^\+\d+$/).required(),
+  });
+  validateInput({ email, password, role, name, phone }, schema);
+
   const response = await apiClient.post('/auth/register', { email, password, role, name, phone });
-  return response.data; // { success: true, data: { userId, token } }
+  return response.data;
 };
 
+/**
+ * Uploads media files
+ * @param {FormData} formData - FormData with media files
+ * @returns {Promise<{ success: boolean, message: string, data: Array<{ id: string, url: string }> }>}
+ */
 export const uploadMedia = async (formData) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to upload media', code: 401, isBigError: false };
   const response = await apiClient.post('/media/upload', formData, {
@@ -108,18 +58,50 @@ export const uploadMedia = async (formData) => {
   return response.data;
 };
 
+/**
+ * Gets the user profile
+ * @returns {Promise<{ success: boolean, data: { _id: string, role: string, email: string, name: string, phone: string, ... } }>}
+ */
 export const getProfile = async () => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to view profile', code: 401, isBigError: false };
   const response = await apiClient.get('/profile');
-  return response.data; // { success: true, data: { _id, role, email, name, phone, ... } }
+  return response.data;
 };
 
+/**
+ * Updates the user profile
+ * @param {Object} profileData - Profile details to update
+ * @returns {Promise<{ success: boolean, message: string, data: Object }>}
+ */
 export const updateProfile = async (profileData) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).optional(),
+    phone: Joi.string().pattern(/^\+\d+$/).optional(),
+    profileImage: Joi.string().uri().optional(),
+    password: Joi.string().min(6).optional(),
+    addresses: Joi.array()
+      .items(
+        Joi.object({
+          street: Joi.string().required(),
+          city: Joi.string().required(),
+          country: Joi.string().required(),
+          postalCode: Joi.string().required(),
+          isDefault: Joi.boolean().optional(),
+        })
+      )
+      .optional(),
+  }).min(1);
+  validateInput(profileData, schema);
+
   if (!isAuthenticated()) throw { message: 'User must be logged in to update profile', code: 401, isBigError: false };
   const response = await apiClient.put('/profile', profileData);
   return response.data;
 };
 
+/**
+ * Deletes (deactivates) the user profile
+ * @returns {Promise<{ success: boolean, message: string }>}
+ */
 export const deleteProfile = async () => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete profile', code: 401, isBigError: false };
   const response = await apiClient.delete('/profile');
@@ -128,13 +110,16 @@ export const deleteProfile = async () => {
   return response.data;
 };
 
-export default {
-  login: (credentials) => apiRequest(() => login(credentials)),
-  register: (userData) => apiRequest(() => register(userData)),
+// Default export for compatibility
+const sharedApi = {
+  login,
+  register,
   logout,
   isAuthenticated,
-  uploadMedia: (formData) => apiRequest(() => uploadMedia(formData)),
-  getProfile: () => apiRequest(() => getProfile()),
-  updateProfile: (profileData) => apiRequest(() => updateProfile(profileData)),
-  deleteProfile: () => apiRequest(() => deleteProfile()),
+  uploadMedia,
+  getProfile,
+  updateProfile,
+  deleteProfile,
 };
+
+export default sharedApi;
