@@ -204,26 +204,41 @@ export const deleteCategory = async (categoryId) => {
 };
  
 /**
- * Gets all orders
+ * Gets all orders with optional filters
  * @param {{ status?: string, district?: string, startDate?: string, endDate?: string }} params - Filter parameters
- * @returns {Promise<{ success: boolean, data: Array }>}
+ * @returns {Promise<{ success: boolean, data: Array<{ _id: string, status: string, shippingAddress: { district: string }, createdAt: string, total: number, buyerId: { _id: string }, sellerId: { _id: string } }> }>}
  */
-export const getAllOrders = async ({ status, district, startDate, endDate } = {}) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view orders', code: 401, isBigError: false };
-  const response = await apiClient.get('/admin/orders', { params: { status, district, startDate, endDate } });
+export const getAllOrders = async (params = {}) => {
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to view orders', code: 401, isBigError: false };
+  }
+  // Clean params: remove empty or undefined values
+  const cleanedParams = Object.fromEntries(
+    Object.entries(params).filter(([_, value]) => value !== '' && value !== undefined)
+  );
+  const response = await apiClient.get('/admin/orders', { params: cleanedParams });
   return response.data;
 };
 
 /**
- * Gets all products
+ * Gets all products with optional filters
  * @param {{ status?: string, category?: string, sellerId?: string }} params - Filter parameters
- * @returns {Promise<{ success: boolean, data: Array }>}
+ * @returns {Promise<{ success: boolean, data: Array<{ _id: string, title: string, price: number, category: { _id: string, name: string }, sellerId: { _id: string, name: string }, status: string }> }>}
  */
-export const getAllProducts = async ({ status, category, sellerId } = {}) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view products', code: 401, isBigError: false };
-  const response = await apiClient.get('/admin/products', { params: { status, category, sellerId } });
+export const getAllProducts = async (params = {}) => {
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to view products', code: 401, isBigError: false };
+  }
+  // Clean params: remove empty or undefined values
+  const cleanedParams = Object.fromEntries(
+    Object.entries(params).filter(([_, value]) => value !== '' && value !== undefined)
+  );
+  console.log('API getAllProducts params:', cleanedParams); // Debug log
+  const response = await apiClient.get('admin/products', { params: cleanedParams });
+  console.log('API getAllProducts response:', response.data); // Debug log
   return response.data;
 };
+
 
 /**
  * Gets admin analytics

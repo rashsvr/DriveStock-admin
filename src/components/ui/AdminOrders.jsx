@@ -21,16 +21,32 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const params = {
-        status: filters.status || undefined,
-        district: filters.district || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      };
+      // Clean filters: only include non-empty values
+      const params = {};
+      if (filters.status) params.status = filters.status;
+      if (filters.district) params.district = filters.district;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+
+      console.log('Fetching orders with params:', params); // Debug log
       const response = await adminApi.getAllOrders(params);
-      setOrders(response.data);
+      console.log('Orders response:', response.data); // Debug log
+      setOrders(response.data || []);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      const status = error.code || error.response?.status;
+      const messages = {
+        400: 'Invalid filter parameters provided.',
+        401: 'Unauthorized: Please log in.',
+        403: 'Forbidden: Admin access required.',
+        404: 'No orders found with the specified filters.',
+        500: 'Server error. Please try again later.',
+      };
+      setAlert({
+        type: 'error',
+        message: messages[status] || error.message || 'Failed to fetch orders.',
+        onClose: () => setAlert(null),
+      });
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -40,28 +56,50 @@ const AdminOrders = () => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  const applyFilters = (e) => {
+  const applyFilters = async (e) => {
     e.preventDefault();
-    fetchOrders();
+    await fetchOrders();
   };
 
-  const resetFilters = () => {
+  const resetFilters = async () => {
     setFilters({ status: '', district: '', startDate: '', endDate: '' });
-    fetchOrders();
+    setLoading(true);
+    try {
+      console.log('Resetting filters, fetching all orders'); // Debug log
+      const response = await adminApi.getAllOrders({});
+      console.log('Reset orders response:', response.data); // Debug log
+      setOrders(response.data || []);
+    } catch (error) {
+      const status = error.code || error.response?.status;
+      const messages = {
+        400: 'Invalid request.',
+        401: 'Unauthorized: Please log in.',
+        403: 'Forbidden: Admin access required.',
+        500: 'Server error. Please try again later.',
+      };
+      setAlert({
+        type: 'error',
+        message: messages[status] || error.message || 'Failed to fetch orders.',
+        onClose: () => setAlert(null),
+      });
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Manage Orders</h2>
+    <div className="p-4 bg-[#1A2526] text-white">
+      <h2 className="text-2xl font-bold mb-4 text-blue-500">Manage Orders</h2>
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
       {/* Filters */}
-      <form onSubmit={applyFilters} className="mb-6 bg-[#1A2526] p-4 rounded-lg text-white">
+      <form onSubmit={applyFilters} className="mb-6 bg-[#1A2526] p-4 rounded-lg">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="label text-sm">Status</label>
+            <label className="label text-sm text-white">Status</label>
             <select
               name="status"
               value={filters.status}
@@ -69,26 +107,26 @@ const AdminOrders = () => {
               className="select select-bordered w-full text-black"
             >
               <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
             </select>
           </div>
           <div>
-            <label className="label text-sm">District</label>
+            <label className="label text-sm text-white">District</label>
             <input
               type="text"
               name="district"
               value={filters.district}
               onChange={handleFilterChange}
-              placeholder="Enter district"
+              placeholder="Enter district (e.g., Colombo)"
               className="input input-bordered w-full text-black"
             />
           </div>
           <div>
-            <label className="label text-sm">Start Date</label>
+            <label className="label text-sm text-white">Start Date</label>
             <input
               type="date"
               name="startDate"
@@ -98,7 +136,7 @@ const AdminOrders = () => {
             />
           </div>
           <div>
-            <label className="label text-sm">End Date</label>
+            <label className="label text-sm text-white">End Date</label>
             <input
               type="date"
               name="endDate"
@@ -109,19 +147,19 @@ const AdminOrders = () => {
           </div>
         </div>
         <div className="mt-4 flex space-x-2">
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 text-white">
             Apply Filters
           </button>
-          <button type="button" onClick={resetFilters} className="btn btn-ghost">
+          <button type="button" onClick={resetFilters} className="btn bg-orange-500 border-none hover:bg-orange-600 text-white">
             Reset
           </button>
         </div>
       </form>
 
       {/* Orders Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg">
         <table className="table w-full bg-[#1A2526] text-white">
-          <thead>
+          <thead className="text-blue-500">
             <tr>
               <th>ID</th>
               <th>Status</th>
@@ -137,12 +175,12 @@ const AdminOrders = () => {
               orders.map((order) => (
                 <tr key={order._id}>
                   <td>{order._id}</td>
-                  <td>{order.status}</td>
-                  <td>{order.district || 'N/A'}</td>
+                  <td>{order.status || 'N/A'}</td>
+                  <td>{order.shippingAddress?.district || 'N/A'}</td>
                   <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td>
-                    {order.totalAmount
-                      ? `$${order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                    {order.total
+                      ? `$${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
                       : 'N/A'}
                   </td>
                   <td>{order.buyerId?._id || 'N/A'}</td>
