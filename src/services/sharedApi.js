@@ -1,5 +1,4 @@
-import apiClient, { isAuthenticated, apiRequest, validateInput } from './apiClient';
-import Joi from 'joi';
+import apiClient, { isAuthenticated, apiRequest } from './apiClient';
 
 /**
  * Logs out the user by clearing localStorage and redirecting
@@ -16,12 +15,6 @@ export const logout = () => {
  * @returns {Promise<{ success: boolean, data: { userId: string, role: string, token: string } }>}
  */
 export const login = async ({ email, password }) => {
-  const schema = Joi.object({
-    email: Joi.string().email({ tlds: { allow: false } }).required(),
-    password: Joi.string().min(6).required(),
-  });
-  validateInput({ email, password }, schema);
-
   const response = await apiClient.post('/auth/login', { email, password });
   return response.data;
 };
@@ -32,15 +25,6 @@ export const login = async ({ email, password }) => {
  * @returns {Promise<{ success: boolean, data: { userId: string, token: string } }>}
  */
 export const register = async ({ email, password, role, name, phone }) => {
-  const schema = Joi.object({
-    email: Joi.string().email({ tlds: { allow: false } }).required(),
-    password: Joi.string().min(6).required(),
-    role: Joi.string().valid('seller', 'buyer').required(),
-    name: Joi.string().min(2).required(),
-    phone: Joi.string().pattern(/^\+\d+$/).required(),
-  });
-  validateInput({ email, password, role, name, phone }, schema);
-
   const response = await apiClient.post('/auth/register', { email, password, role, name, phone });
   return response.data;
 };
@@ -74,25 +58,6 @@ export const getProfile = async () => {
  * @returns {Promise<{ success: boolean, message: string, data: Object }>}
  */
 export const updateProfile = async (profileData) => {
-  const schema = Joi.object({
-    name: Joi.string().min(2).optional(),
-    phone: Joi.string().pattern(/^\+\d+$/).optional(),
-    profileImage: Joi.string().uri().optional(),
-    password: Joi.string().min(6).optional(),
-    addresses: Joi.array()
-      .items(
-        Joi.object({
-          street: Joi.string().required(),
-          city: Joi.string().required(),
-          country: Joi.string().required(),
-          postalCode: Joi.string().required(),
-          isDefault: Joi.boolean().optional(),
-        })
-      )
-      .optional(),
-  }).min(1);
-  validateInput(profileData, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to update profile', code: 401, isBigError: false };
   const response = await apiClient.put('/profile', profileData);
   return response.data;

@@ -1,5 +1,4 @@
-import apiClient, { isAuthenticated, apiRequest, validateInput } from './apiClient';
-import Joi from 'joi';
+import apiClient, { isAuthenticated, apiRequest } from './apiClient';
 
 /**
  * Gets all admins
@@ -17,14 +16,6 @@ export const getAllAdmins = async () => {
  * @returns {Promise<{ success: boolean, data: { adminId: string } }>}
  */
 export const createAdmin = async ({ email, password, name, phone }) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-    name: Joi.string().min(2).required(),
-    phone: Joi.string().pattern(/^\+\d+$/).required(),
-  });
-  validateInput({ email, password, name, phone }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to create an admin', code: 401, isBigError: false };
   const response = await apiClient.post('/admin/admins', { email, password, name, phone });
   return response.data;
@@ -36,11 +27,6 @@ export const createAdmin = async ({ email, password, name, phone }) => {
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteAdmin = async (adminId) => {
-  const schema = Joi.object({
-    adminId: Joi.string().required(),
-  });
-  validateInput({ adminId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete an admin', code: 401, isBigError: false };
   const response = await apiClient.delete(`/admin/admins/${adminId}`);
   return response.data;
@@ -62,15 +48,6 @@ export const getAllCouriers = async () => {
  * @returns {Promise<{ success: boolean, data: { courierId: string } }>}
  */
 export const createCourier = async ({ email, password, name, phone, region }) => {
-  const schema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-    name: Joi.string().min(2).required(),
-    phone: Joi.string().pattern(/^\+\d+$/).required(),
-    region: Joi.string().required(),
-  });
-  validateInput({ email, password, name, phone, region }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to create a courier', code: 401, isBigError: false };
   const response = await apiClient.post('/admin/couriers', { email, password, name, phone, region });
   return response.data;
@@ -83,15 +60,6 @@ export const createCourier = async ({ email, password, name, phone, region }) =>
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const updateCourier = async (courierId, { email, name, phone, region }) => {
-  const schema = Joi.object({
-    courierId: Joi.string().required(),
-    email: Joi.string().email().optional(),
-    name: Joi.string().min(2).optional(),
-    phone: Joi.string().pattern(/^\+\d+$/).optional(),
-    region: Joi.string().optional(),
-  }).min(1);
-  validateInput({ courierId, email, name, phone, region }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to update a courier', code: 401, isBigError: false };
   const response = await apiClient.put(`/admin/couriers/${courierId}`, { email, name, phone, region });
   return response.data;
@@ -103,11 +71,6 @@ export const updateCourier = async (courierId, { email, name, phone, region }) =
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteCourier = async (courierId) => {
-  const schema = Joi.object({
-    courierId: Joi.string().required(),
-  });
-  validateInput({ courierId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete a courier', code: 401, isBigError: false };
   const response = await apiClient.delete(`/admin/couriers/${courierId}`);
   return response.data;
@@ -139,11 +102,6 @@ export const getAllSellers = async () => {
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const approveSeller = async (sellerId) => {
-  const schema = Joi.object({
-    sellerId: Joi.string().required(),
-  });
-  validateInput({ sellerId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to approve a seller', code: 401, isBigError: false };
   const response = await apiClient.put(`/admin/sellers/${sellerId}`);
   return response.data;
@@ -155,11 +113,6 @@ export const approveSeller = async (sellerId) => {
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteSeller = async (sellerId) => {
-  const schema = Joi.object({
-    sellerId: Joi.string().required(),
-  });
-  validateInput({ sellerId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete a seller', code: 401, isBigError: false };
   const response = await apiClient.delete(`/admin/sellers/${sellerId}`);
   return response.data;
@@ -181,11 +134,6 @@ export const getAllBuyers = async () => {
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteBuyer = async (buyerId) => {
-  const schema = Joi.object({
-    buyerId: Joi.string().required(),
-  });
-  validateInput({ buyerId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete a buyer', code: 401, isBigError: false };
   const response = await apiClient.delete(`/admin/buyers/${buyerId}`);
   return response.data;
@@ -202,17 +150,22 @@ export const getAllCategories = async () => {
 };
 
 /**
+ * Gets a single category by ID
+ * @param {string} categoryId - Category ID
+ * @returns {Promise<{ success: boolean, data: Array }>}
+ */
+export const getCategoryById = async (categoryId) => {
+  if (!isAuthenticated()) throw { message: 'User must be logged in to view category', code: 401, isBigError: false };
+  const response = await apiClient.get(`/admin/categories/${categoryId}`);
+  return response.data;
+};
+
+/**
  * Creates a new category
  * @param {{ name: string, parentCategory?: string }} categoryData - Category details
  * @returns {Promise<{ success: boolean, data: { categoryId: string } }>}
  */
 export const createCategory = async ({ name, parentCategory }) => {
-  const schema = Joi.object({
-    name: Joi.string().min(2).required(),
-    parentCategory: Joi.string().optional().allow(null),
-  });
-  validateInput({ name, parentCategory }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to create a category', code: 401, isBigError: false };
   const response = await apiClient.post('/admin/categories', { name, parentCategory });
   return response.data;
@@ -221,19 +174,12 @@ export const createCategory = async ({ name, parentCategory }) => {
 /**
  * Updates a category
  * @param {string} categoryId - Category ID
- * @param {{ name?: string, parentCategory?: string }} categoryData - Category details to update
+ * @param {{ name?: string, parentCategory?: string, categoryOption?: Array }} categoryData - Category details to update
  * @returns {Promise<{ success: boolean, message: string }>}
  */
-export const updateCategory = async (categoryId, { name, parentCategory }) => {
-  const schema = Joi.object({
-    categoryId: Joi.string().required(),
-    name: Joi.string().min(2).optional(),
-    parentCategory: Joi.string().optional().allow(null),
-  }).min(1);
-  validateInput({ categoryId, name, parentCategory }, schema);
-
+export const updateCategory = async (categoryId, { name, parentCategory, categoryOption }) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to update a category', code: 401, isBigError: false };
-  const response = await apiClient.put(`/admin/categories/${categoryId}`, { name, parentCategory });
+  const response = await apiClient.put(`/admin/categories/${categoryId}`, { name, parentCategory, categoryOption });
   return response.data;
 };
 
@@ -243,11 +189,6 @@ export const updateCategory = async (categoryId, { name, parentCategory }) => {
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteCategory = async (categoryId) => {
-  const schema = Joi.object({
-    categoryId: Joi.string().required(),
-  });
-  validateInput({ categoryId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete a category', code: 401, isBigError: false };
   const response = await apiClient.delete(`/admin/categories/${categoryId}`);
   return response.data;
@@ -259,14 +200,6 @@ export const deleteCategory = async (categoryId) => {
  * @returns {Promise<{ success: boolean, data: Array }>}
  */
 export const getAllOrders = async ({ status, district, startDate, endDate } = {}) => {
-  const schema = Joi.object({
-    status: Joi.string().optional(),
-    district: Joi.string().optional(),
-    startDate: Joi.string().isoDate().optional(),
-    endDate: Joi.string().isoDate().optional(),
-  });
-  validateInput({ status, district, startDate, endDate }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to view orders', code: 401, isBigError: false };
   const response = await apiClient.get('/admin/orders', { params: { status, district, startDate, endDate } });
   return response.data;
@@ -278,13 +211,6 @@ export const getAllOrders = async ({ status, district, startDate, endDate } = {}
  * @returns {Promise<{ success: boolean, data: Array }>}
  */
 export const getAllProducts = async ({ status, category, sellerId } = {}) => {
-  const schema = Joi.object({
-    status: Joi.string().optional(),
-    category: Joi.string().optional(),
-    sellerId: Joi.string().optional(),
-  });
-  validateInput({ status, category, sellerId }, schema);
-
   if (!isAuthenticated()) throw { message: 'User must be logged in to view products', code: 401, isBigError: false };
   const response = await apiClient.get('/admin/products', { params: { status, category, sellerId } });
   return response.data;
@@ -315,6 +241,7 @@ export default {
   getAllBuyers: () => apiRequest(() => getAllBuyers()),
   deleteBuyer: (buyerId) => apiRequest(() => deleteBuyer(buyerId)),
   getAllCategories: () => apiRequest(() => getAllCategories()),
+  getCategoryById: (categoryId) => apiRequest(() => getCategoryById(categoryId)),
   createCategory: (categoryData) => apiRequest(() => createCategory(categoryData)),
   updateCategory: (categoryId, categoryData) => apiRequest(() => updateCategory(categoryId, categoryData)),
   deleteCategory: (categoryId) => apiRequest(() => deleteCategory(categoryId)),

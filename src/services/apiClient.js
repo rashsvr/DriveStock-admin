@@ -1,6 +1,5 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import Joi from 'joi';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -74,17 +73,6 @@ apiClient.interceptors.response.use(
 );
 
 export const isAuthenticated = () => !!localStorage.getItem('token');
-
-export const validateInput = (data, schema) => {
-  const { error } = schema.validate(data, { abortEarly: false });
-  if (error) {
-    throw {
-      message: error.details.map((d) => d.message).join(', '),
-      code: 400,
-      isBigError: false,
-    };
-  }
-};
 
 export const apiRequest = async (requestFn) => {
   try {

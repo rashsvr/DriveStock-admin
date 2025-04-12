@@ -1,4 +1,3 @@
-// pages/AdminAdmins.jsx
 import React, { useState, useEffect } from 'react';
 import adminApi from '../../services/adminApi';
 import PageContainer from './PageContainer';
@@ -12,8 +11,6 @@ const AdminAdmins = () => {
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editId, setEditId] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, adminId: null });
 
   useEffect(() => {
@@ -34,14 +31,6 @@ const AdminAdmins = () => {
 
   const openCreateModal = () => {
     setFormData({ email: '', password: '', name: '', phone: '' });
-    setIsEditing(false);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (admin) => {
-    setFormData({ email: admin.email, name: admin.name, phone: admin.phone, password: '' });
-    setIsEditing(true);
-    setEditId(admin._id);
     setModalOpen(true);
   };
 
@@ -54,13 +43,8 @@ const AdminAdmins = () => {
     setLoading(true);
     setAlert(null);
     try {
-      if (isEditing) {
-        await adminApi.updateAdmin(editId, formData);
-        setAlert({ type: 'success', message: 'Admin updated successfully', onClose: () => setAlert(null) });
-      } else {
-        await adminApi.createAdmin(formData);
-        setAlert({ type: 'success', message: 'Admin created successfully', onClose: () => setAlert(null) });
-      }
+      await adminApi.createAdmin(formData);
+      setAlert({ type: 'success', message: 'Admin created successfully', onClose: () => setAlert(null) });
       await fetchAdmins(); // Immediate refetch for latest data
       setModalOpen(false);
     } catch (error) {
@@ -98,11 +82,6 @@ const AdminAdmins = () => {
 
   const actions = [
     {
-      label: 'Edit',
-      onClick: openEditModal,
-      className: 'bg-highlight-blue text-white',
-    },
-    {
       label: 'Delete',
       onClick: handleDelete,
       className: 'btn-error text-white',
@@ -124,9 +103,7 @@ const AdminAdmins = () => {
           {modalOpen && (
             <dialog open className="modal">
               <div className="modal-box bg-[#1A2526] text-white max-w-md mx-auto p-4 sm:p-6">
-                <h3 className="font-bold text-lg sm:text-xl mb-4">
-                  {isEditing ? 'Edit Admin' : 'Create Admin'}
-                </h3>
+                <h3 className="font-bold text-lg sm:text-xl mb-4">Create Admin</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="label text-sm sm:text-base">Email</label>
@@ -139,19 +116,17 @@ const AdminAdmins = () => {
                       required
                     />
                   </div>
-                  {!isEditing && (
-                    <div>
-                      <label className="label text-sm sm:text-base">Password</label>
-                      <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="input input-bordered w-full text-sm sm:text-base"
-                        required
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="label text-sm sm:text-base">Password</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="input input-bordered w-full text-sm sm:text-base"
+                      required
+                    />
+                  </div>
                   <div>
                     <label className="label text-sm sm:text-base">Name</label>
                     <input
@@ -179,7 +154,7 @@ const AdminAdmins = () => {
                       type="submit"
                       className="btn bg-highlight-teal border-none hover:bg-teal-600 text-sm sm:text-base"
                     >
-                      {isEditing ? 'Update' : 'Create'}
+                      Create
                     </button>
                     <button
                       type="button"
