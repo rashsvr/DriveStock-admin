@@ -1,138 +1,170 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../context/AuthContext';
-import Table from './Table';
+import React, { useState, useEffect } from 'react';
+import sellerApi from '../../services/sellerApi';
 import Alert from './Alert';
-import ConfirmationModal from './ConfirmationModal';
 import LoadingAnimation from '../function/LoadingAnimation';
-import { format } from 'date-fns';
 
 const SellerOrders = () => {
-  const { getSellerOrders, updateOrderStatus } = useAuth();
-  const queryClient = useQueryClient();
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [newStatus, setNewStatus] = useState('');
+  const [orders, setOrders] = useState([]);
+  const [filters, setFilters] = useState({ status: '' });
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+  const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['sellerOrders'],
-    queryFn: () => getSellerOrders({ page: 1, limit: 100 }), // Fetch all for simplicity
-  });
+  useEffect(() => {
+    fetchOrders();
+  }, [pagination.page, filters.status]);
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sellerOrders']);
-      setIsStatusModalOpen(false);
-      setSelectedOrder(null);
-      setNewStatus('');
-    },
-    onError: (err) => {
-      // Alert handles error display
-    },
-  });
-
-  const handleStatusUpdate = (order) => {
-    setSelectedOrder(order);
-    setNewStatus(order.items[0]?.sellerStatus || 'Pending');
-    setIsStatusModalOpen(true);
-  };
-
-  const confirmStatusUpdate = () => {
-    if (selectedOrder && newStatus) {
-      updateStatusMutation.mutate({ orderId: selectedOrder._id, status: newStatus });
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const response = await sellerApi.getSellerOrders({ page: pagination.page, limit: pagination.limit });
+      setOrders(response.data);
+      setPagination((prev) => ({ ...prev, total: response.pagination?.total || response.data.length }));
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (isLoading) {
-    return <LoadingAnimation />;
-  }
+  const handleStatusUpdate = async (orderId, status) => {
+    setLoading(true);
+    try {
+      await sellerApi.updateOrderStatus(orderId, { status });
+      setAlert({ type: 'success', message: 'Order status updated', onClose: () => setAlert(null) });
+      fetchOrders();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="p-4">
-        <Alert type="error" message={error.message || 'Failed to load orders'} />
-      </div>
-    );
-  }
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    setLoading(true);
+    try {
+      await sellerApi.cancelOrder(orderId);
+      setAlert({ type: 'success', message: 'Order cancelled', onClose: () => setAlert(null) });
+      fetchOrders();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const orders = data?.data || [];
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
 
-  const columns = [
-    { key: '_id', label: 'Order ID', render: (item) => item._id.slice(0, 8) + '...' },
-    { key: 'buyer', label: 'Buyer', render: (item) => item.buyerId.name },
-    { key: 'total', label: 'Total', render: (item) => `$${item.total.toFixed(2)}` },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (item) => item.items[0]?.sellerStatus || 'Pending',
-    },
-    {
-      key: 'createdAt',
-      label: 'Date',
-      render: (item) => format(new Date(item.createdAt), 'PPP'),
-    },
-  ];
-
-  const actions = [
-    {
-      label: 'Update Status',
-      className: 'btn-primary bg-highlight-blue hover:bg-blue-700',
-      onClick: handleStatusUpdate,
-    },
-    {
-      label: 'View Details',
-      className: 'btn-secondary bg-highlight-teal hover:bg-teal-600',
-      onClick: (order) => {
-        // Log details or open a modal
-        console.log('Order Details:', order);
-      },
-    },
-  ];
+  if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-base-100 text-white">
-      <h1 className="text-2xl sm:text-3xl font-bold">Seller Orders</h1>
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">My Orders</h2>
+      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
-      {updateStatusMutation.isError && (
-        <Alert
-          type="error"
-          message={updateStatusMutation.error.message || 'Failed to update status'}
-        />
-      )}
-
-      <div className="card bg-[#2A3536] shadow-xl">
-        <div className="card-body">
-          <Table
-            data={orders}
-            columns={columns}
-            actions={actions}
-            emptyMessage="No orders found"
-          />
-        </div>
-      </div>
-
-      <ConfirmationModal
-        isOpen={isStatusModalOpen}
-        onClose={() => setIsStatusModalOpen(false)}
-        onConfirm={confirmStatusUpdate}
-        title="Update Order Status"
-        message={
-          <div className="space-y-4">
-            <p>Update status for order {selectedOrder?._id.slice(0, 8)}...</p>
+      {/* Filters */}
+      <form className="mb-6 bg-[#1A2526] p-4 rounded-lg text-white">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label text-sm">Status</label>
             <select
-              className="select select-bordered w-full bg-[#2A3536] text-white"
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
+              name="status"
+              value={filters.status}
+              onChange={handleFilterChange}
+              className="select select-bordered w-full text-black"
             >
-              <option value="Processing">Processing</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
-        }
-        confirmText={updateStatusMutation.isLoading ? 'Updating...' : 'Update'}
-      />
+        </div>
+      </form>
+
+      {/* Orders Table */}
+      <div className="overflow-x-auto">
+        <table className="table w-full bg-[#1A2526] text-white">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Buyer</th>
+              <th>Total Amount</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.length > 0 ? (
+              orders.map((order) => (
+                <tr key={order._id}>
+                  <td>{order._id}</td>
+                  <td>{order.status}</td>
+                  <td>{order.buyerId?.name || order.buyerId?._id || 'N/A'}</td>
+                  <td>
+                    {order.totalAmount
+                      ? `$${order.totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                      : 'N/A'}
+                  </td>
+                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <select
+                      value={order.status}
+                      onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                      className="select select-sm select-bordered text-black"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                    </select>
+                    <button
+                      className="btn btn-sm btn-error ml-2"
+                      onClick={() => handleCancel(order._id)}
+                      disabled={order.status === 'cancelled' || order.status === 'delivered'}
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center text-gray-400">
+                  No orders found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-4">
+        <button
+          className="btn btn-primary mr-2"
+          disabled={pagination.page === 1}
+          onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+        >
+          Previous
+        </button>
+        <span className="text-white">
+          Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+        </span>
+        <button
+          className="btn btn-primary ml-2"
+          disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+          onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,252 +1,388 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../context/AuthContext';
-import Table from './Table';
+import React, { useState, useEffect } from 'react';
+import sellerApi from '../../services/sellerApi';
 import Alert from './Alert';
-import ConfirmationModal from './ConfirmationModal';
 import LoadingAnimation from '../function/LoadingAnimation';
 
 const SellerProducts = () => {
-  const { createProduct, getSellerProducts, updateProduct, deleteProduct } = useAuth();
-  const queryClient = useQueryClient();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState(null);
-  const [newProduct, setNewProduct] = useState({
-    title: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-    condition: 'New',
-  });
-  const [updateData, setUpdateData] = useState({});
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => getSellerProducts({ page: 1, limit: 100 }), // Fetch all for simplicity
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+  const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '', description: '', price: '', category: '', stock: '', condition: 'new',
+    brand: '', oem: false, aftermarket: false, material: '', makeModel: '', years: [], images: [],
   });
 
-  const createProductMutation = useMutation({
-    mutationFn: createProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['products']);
-      setIsCreateModalOpen(false);
-      setNewProduct({ title: '', description: '', price: '', category: '', stock: '', condition: 'New' });
-    },
-  });
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, [pagination.page]);
 
-  const updateProductMutation = useMutation({
-    mutationFn: ({ productId, productData }) => updateProduct(productId, productData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['products']);
-      setUpdateData({});
-    },
-  });
+  const fetchCategories = async () => {
+    try {
+      const response = await sellerApi.getAllCategories(); // Assume this exists or adjust
+      setCategories(response.data);
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    }
+  };
 
-  const deleteProductMutation = useMutation({
-    mutationFn: deleteProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['products']);
-      setIsDeleteModalOpen(false);
-      setSelectedProductId(null);
-    },
-  });
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const response = await sellerApi.getSellerProducts({ page: pagination.page, limit: pagination.limit });
+      setProducts(response.data);
+      setPagination((prev) => ({ ...prev, total: response.pagination.total }));
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleCreateProduct = () => {
-    createProductMutation.mutate({
-      ...newProduct,
-      price: parseFloat(newProduct.price) || 0,
-      stock: parseInt(newProduct.stock) || 0,
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await sellerApi.createProduct({
+        ...formData,
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        years: formData.years.split(',').map((y) => parseInt(y.trim())),
+      });
+      setAlert({ type: 'success', message: 'Product created successfully', onClose: () => setAlert(null) });
+      setShowCreateModal(false);
+      setFormData({ title: '', description: '', price: '', category: '', stock: '', condition: 'new',
+        brand: '', oem: false, aftermarket: false, material: '', makeModel: '', years: [], images: [] });
+      fetchProducts();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await sellerApi.updateProduct(selectedProduct._id, {
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        description: formData.description,
+      });
+      setAlert({ type: 'success', message: 'Product updated successfully', onClose: () => setAlert(null) });
+      setShowUpdateModal(false);
+      setSelectedProduct(null);
+      fetchProducts();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    setLoading(true);
+    try {
+      await sellerApi.deleteProduct(productId);
+      setAlert({ type: 'success', message: 'Product deleted successfully', onClose: () => setAlert(null) });
+      fetchProducts();
+    } catch (error) {
+      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const openUpdateModal = (product) => {
+    setSelectedProduct(product);
+    setFormData({
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      description: product.description || '',
     });
+    setShowUpdateModal(true);
   };
 
-  const handleUpdateProduct = (productId, field, value) => {
-    const updatedValue = field === 'price' ? parseFloat(value) : field === 'stock' ? parseInt(value) : value;
-    setUpdateData((prev) => ({ ...prev, [field]: updatedValue }));
-    updateProductMutation.mutate({ productId, productData: { [field]: updatedValue } });
-  };
-
-  const handleDeleteProduct = (productId) => {
-    setSelectedProductId(productId);
-    setIsDeleteModalOpen(true);
-  };
-
-  if (isLoading) {
-    return <LoadingAnimation />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        <Alert type="error" message={error.message || 'Failed to load products'} />
-      </div>
-    );
-  }
-
-  const products = data?.data || [];
-
-  const columns = [
-    { key: 'title', label: 'Title' },
-    {
-      key: 'price',
-      label: 'Price',
-      render: (item) => (
-        <input
-          type="number"
-          defaultValue={item.price}
-          onBlur={(e) => handleUpdateProduct(item._id, 'price', e.target.value)}
-          className="input input-bordered input-sm bg-[#2A3536] text-white w-24"
-        />
-      ),
-    },
-    {
-      key: 'stock',
-      label: 'Stock',
-      render: (item) => (
-        <input
-          type="number"
-          defaultValue={item.stock}
-          onBlur={(e) => handleUpdateProduct(item._id, 'stock', e.target.value)}
-          className="input input-bordered input-sm bg-[#2A3536] text-white w-24"
-        />
-      ),
-    },
-    { key: 'availability', label: 'Availability' },
-  ];
-
-  const actions = [
-    {
-      label: 'Delete',
-      className: 'btn-error bg-red-600 hover:bg-red-700',
-      onClick: (product) => handleDeleteProduct(product._id),
-    },
-  ];
+  if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 bg-base-100 text-white">
-      <h1 className="text-2xl sm:text-3xl font-bold">Seller Products</h1>
-
-      {(createProductMutation.isError || updateProductMutation.isError || deleteProductMutation.isError) && (
-        <Alert
-          type="error"
-          message={
-            createProductMutation.error?.message ||
-            updateProductMutation.error?.message ||
-            deleteProductMutation.error?.message ||
-            'An error occurred'
-          }
-        />
-      )}
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">My Products</h2>
+      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
       <button
-        onClick={() => setIsCreateModalOpen(true)}
-        className="btn btn-primary bg-highlight-blue hover:bg-blue-700"
+        className="btn btn-primary mb-4"
+        onClick={() => setShowCreateModal(true)}
       >
         Add Product
       </button>
 
-      <div className="card bg-[#2A3536] shadow-xl">
-        <div className="card-body">
-          <Table
-            data={products}
-            columns={columns}
-            actions={actions}
-            emptyMessage="No products found"
-          />
-        </div>
+      {/* Products Table */}
+      <div className="overflow-x-auto">
+        <table className="table w-full bg-[#1A2526] text-white">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Category</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.length > 0 ? (
+              products.map((product) => (
+                <tr key={product._id}>
+                  <td>{product._id}</td>
+                  <td>{product.title}</td>
+                  <td>${product.price?.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                  <td>{product.stock}</td>
+                  <td>{typeof product.category === 'string'
+                    ? categories.find((cat) => cat._id === product.category)?.name || 'N/A'
+                    : product.category?.name || 'N/A'}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary mr-2"
+                      onClick={() => openUpdateModal(product)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-error"
+                      onClick={() => handleDelete(product._id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center text-gray-400">
+                  No products found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Create Product Modal */}
-      <ConfirmationModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onConfirm={handleCreateProduct}
-        title="Create New Product"
-        message={
-          <div className="space-y-4">
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Title</span>
-              </label>
-              <input
-                type="text"
-                value={newProduct.title}
-                onChange={(e) => setNewProduct({ ...newProduct, title: e.target.value })}
-                className="input input-bordered w-full bg-[#2A3536] text-white"
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Description</span>
-              </label>
-              <textarea
-                value={newProduct.description}
-                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                className="textarea textarea-bordered w-full bg-[#2A3536] text-white"
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Price</span>
-              </label>
-              <input
-                type="number"
-                value={newProduct.price}
-                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                className="input input-bordered w-full bg-[#2A3536] text-white"
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Category</span>
-              </label>
-              <input
-                type="text"
-                value={newProduct.category}
-                onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                className="input input-bordered w-full bg-[#2A3536] text-white"
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Stock</span>
-              </label>
-              <input
-                type="number"
-                value={newProduct.stock}
-                onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                className="input input-bordered w-full bg-[#2A3536] text-white"
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text text-white">Condition</span>
-              </label>
-              <select
-                value={newProduct.condition}
-                onChange={(e) => setNewProduct({ ...newProduct, condition: e.target.value })}
-                className="select select-bordered w-full bg-[#2A3536] text-white"
-              >
-                <option value="New">New</option>
-                <option value="Used">Used</option>
-                <option value="Refurbished">Refurbished</option>
-              </select>
-            </div>
-          </div>
-        }
-        confirmText={createProductMutation.isLoading ? 'Creating...' : 'Create'}
-      />
+      {/* Pagination */}
+      <div className="flex justify-center mt-4">
+        <button
+          className="btn btn-primary mr-2"
+          disabled={pagination.page === 1}
+          onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+        >
+          Previous
+        </button>
+        <span className="text-white">
+          Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+        </span>
+        <button
+          className="btn btn-primary ml-2"
+          disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+          onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+        >
+          Next
+        </button>
+      </div>
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => deleteProductMutation.mutate(selectedProductId)}
-        title="Delete Product"
-        message="Are you sure you want to delete this product? This action cannot be undone."
-        confirmText={deleteProductMutation.isLoading ? 'Deleting...' : 'Delete'}
-      />
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="modal modal-open">
+          <div className="modal-box bg-[#1A2526] text-white">
+            <h3 className="font-bold text-lg">Add New Product</h3>
+            <form onSubmit={handleCreate}>
+              <div className="grid grid-cols-1 gap-4">
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleFormChange}
+                  placeholder="Title"
+                  className="input input-bordered w-full text-black"
+                  required
+                />
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  placeholder="Description"
+                  className="textarea textarea-bordered w-full text-black"
+                />
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleFormChange}
+                  placeholder="Price"
+                  className="input input-bordered w-full text-black"
+                  required
+                />
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleFormChange}
+                  className="select select-bordered w-full text-black"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleFormChange}
+                  placeholder="Stock"
+                  className="input input-bordered w-full text-black"
+                  required
+                />
+                <select
+                  name="condition"
+                  value={formData.condition}
+                  onChange={handleFormChange}
+                  className="select select-bordered w-full text-black"
+                >
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                  <option value="refurbished">Refurbished</option>
+                </select>
+                <input
+                  type="text"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleFormChange}
+                  placeholder="Brand"
+                  className="input input-bordered w-full text-black"
+                />
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="oem"
+                    checked={formData.oem}
+                    onChange={handleFormChange}
+                    className="checkbox mr-2"
+                  />
+                  OEM
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="aftermarket"
+                    checked={formData.aftermarket}
+                    onChange={handleFormChange}
+                    className="checkbox mr-2"
+                  />
+                  Aftermarket
+                </label>
+                <input
+                  type="text"
+                  name="material"
+                  value={formData.material}
+                  onChange={handleFormChange}
+                  placeholder="Material"
+                  className="input input-bordered w-full text-black"
+                />
+                <input
+                  type="text"
+                  name="makeModel"
+                  value={formData.makeModel}
+                  onChange={handleFormChange}
+                  placeholder="Make & Model"
+                  className="input input-bordered w-full text-black"
+                />
+                <input
+                  type="text"
+                  name="years"
+                  value={formData.years.join(',')}
+                  onChange={handleFormChange}
+                  placeholder="Years (comma-separated)"
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
+              <div className="modal-action">
+                <button type="submit" className="btn btn-primary">Create</button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Update Modal */}
+      {showUpdateModal && (
+        <div className="modal modal-open">
+          <div className="modal-box bg-[#1A2526] text-white">
+            <h3 className="font-bold text-lg">Update Product</h3>
+            <form onSubmit={handleUpdate}>
+              <div className="grid grid-cols-1 gap-4">
+                <input
+                  type="text"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleFormChange}
+                  placeholder="Description"
+                  className="input input-bordered w-full text-black"
+                />
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleFormChange}
+                  placeholder="Price"
+                  className="input input-bordered w-full text-black"
+                  required
+                />
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleFormChange}
+                  placeholder="Stock"
+                  className="input input-bordered w-full text-black"
+                  required
+                />
+              </div>
+              <div className="modal-action">
+                <button type="submit" className="btn btn-primary">Update</button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowUpdateModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

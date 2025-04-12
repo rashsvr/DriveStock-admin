@@ -14,12 +14,14 @@ const Sidebar = () => {
       { path: '/dashboard/sellers', label: 'Manage Sellers' },
       { path: '/dashboard/buyers', label: 'Manage Buyers' },
       { path: '/dashboard/categories', label: 'Manage Categories' },
+      { path: '/dashboard/orders', label: 'Manage Orders' },
+      { path: '/dashboard/products', label: 'Manage Products' },
       { path: '/dashboard/profile', label: 'My Profile' },
     ],
     seller: [
       { path: '/dashboard/analytics', label: 'Analytics' },
-      { path: '/dashboard/products', label: 'My Products' },
-      { path: '/dashboard/orders', label: 'My Orders' },
+      { path: '/dashboard/seller-products', label: 'My Products' },
+      { path: '/dashboard/seller-orders', label: 'My Orders' },
       { path: '/dashboard/profile', label: 'My Profile' },
     ],
     courier: [
