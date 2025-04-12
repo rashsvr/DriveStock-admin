@@ -5,7 +5,7 @@ import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
-  const [formData, setFormData] = useState({ name: '', parentCategory: '' });
+  const [formData, setFormData] = useState({ name: '' });
   const [editId, setEditId] = useState(null);
   const [subcategoryModal, setSubcategoryModal] = useState({
     isOpen: false,
@@ -24,93 +24,101 @@ const AdminCategories = () => {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const data = await adminApi.getAllCategories();
-      setCategories(data.data);
+      const response = await adminApi.getAllCategories();
+      console.log('Fetched Categories:', response.data); // Debug log
+      setCategories(response.data || []);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSubcategories = async (categoryId) => {
-    setLoading(true);
-    try {
-      // Try getCategoryById first
-      const data = await adminApi.getCategoryById(categoryId);
-      console.log('getCategoryById response:', data); // Debug log
-      // Handle array response
-      const category = data.data && data.data[0] ? data.data[0] : null;
-      if (category && category.categoryOption) {
-        return category.categoryOption;
-      }
-      // Fallback to getAllCategories if categoryOption is missing
-      console.warn('categoryOption missing in getCategoryById, falling back to getAllCategories');
-      const allCategoriesData = await adminApi.getAllCategories();
-      const matchingCategory = allCategoriesData.data.find((cat) => cat._id === categoryId);
-      return matchingCategory && matchingCategory.categoryOption ? matchingCategory.categoryOption : [];
-    } catch (error) {
-      console.error('fetchSubcategories error:', error); // Debug log
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
-      return [];
-    } finally {
-      setLoading(false);
-    }
+  const handleError = (error) => {
+    const status = error.code || error.response?.status;
+    const messages = {
+      400: 'Invalid category name provided.',
+      401: 'Unauthorized: Please log in.',
+      403: 'Forbidden: Admin access required.',
+      404: 'Category not found.',
+      409: 'Category name already exists.',
+      500: 'Server error. Please try again later.',
+    };
+    setAlert({
+      type: 'error',
+      message: messages[status] || error.message || 'An error occurred.',
+      onClose: () => setAlert(null),
+    });
   };
 
-  const handleMainCategoryChange = (e) => {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleMainCategorySubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.name.trim()) {
+      setAlert({ type: 'error', message: 'Category name is required.', onClose: () => setAlert(null) });
+      return;
+    }
     setLoading(true);
     setAlert(null);
     try {
       if (editId) {
-        await adminApi.updateCategory(editId, formData);
+        console.log('Updating main category:', { name: formData.name }); // Debug log
+        await adminApi.updateCategory(editId, { name: formData.name });
         setAlert({ type: 'success', message: 'Category updated successfully', onClose: () => setAlert(null) });
         setEditId(null);
       } else {
-        await adminApi.createCategory(formData);
+        console.log('Creating main category:', { name: formData.name }); // Debug log
+        await adminApi.createCategory({ name: formData.name });
         setAlert({ type: 'success', message: 'Category created successfully', onClose: () => setAlert(null) });
       }
-      setFormData({ name: '', parentCategory: '' });
-      fetchCategories();
+      setFormData({ name: '' });
+      await fetchCategories();
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditMainCategory = (category) => {
+  const handleEdit = (category) => {
     setEditId(category._id);
-    setFormData({ name: category.name, parentCategory: category.parentCategory || '' });
+    setFormData({ name: category.name });
   };
 
-  const handleDeleteMainCategory = async (categoryId) => {
-    if (!window.confirm('Are you sure you want to delete this category and its subcategories?')) return;
+  const handleDelete = async (categoryId) => {
+    if (!window.confirm('Are you sure you want to soft-delete this category?')) return;
     setLoading(true);
     setAlert(null);
     try {
+      const category = categories.find((cat) => cat._id === categoryId);
+      if (category.categoryOption && category.categoryOption.filter((sub) => sub.status !== 'deleted').length > 0) {
+        setAlert({
+          type: 'error',
+          message: 'Cannot delete category with active subcategories.',
+          onClose: () => setAlert(null),
+        });
+        return;
+      }
+      console.log('Deleting main category:', categoryId); // Debug log
       await adminApi.deleteCategory(categoryId);
-      setAlert({ type: 'success', message: 'Category deleted successfully', onClose: () => setAlert(null) });
-      fetchCategories();
+      setAlert({ type: 'success', message: 'Category marked as deleted', onClose: () => setAlert(null) });
+      await fetchCategories();
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const openSubcategoryModal = async (categoryId) => {
-    const subcategories = await fetchSubcategories(categoryId);
-    console.log('Loaded subcategories:', subcategories); // Debug log
+  const openSubcategoryModal = (category) => {
+    console.log('Opening modal for parentId:', category._id, 'with subcategories:', category.categoryOption); // Debug log
     setSubcategoryModal({
       isOpen: true,
-      parentId: categoryId,
-      subcategories,
+      parentId: category._id,
+      subcategories: category.categoryOption || [],
       newSubcategoryName: '',
       editSubcategoryId: null,
     });
@@ -122,58 +130,52 @@ const AdminCategories = () => {
 
   const handleSubcategorySubmit = async (e) => {
     e.preventDefault();
+    if (!subcategoryModal.newSubcategoryName.trim()) {
+      setAlert({ type: 'error', message: 'Subcategory name is required.', onClose: () => setAlert(null) });
+      return;
+    }
     setLoading(true);
     setAlert(null);
     try {
-      const { parentId, newSubcategoryName, editSubcategoryId, subcategories } = subcategoryModal;
-      let updatedSubcategories = [...subcategories];
+      const { parentId, newSubcategoryName, editSubcategoryId } = subcategoryModal;
 
       if (editSubcategoryId) {
-        updatedSubcategories = updatedSubcategories.map((sub) =>
-          sub._id === editSubcategoryId ? { ...sub, name: newSubcategoryName } : sub
-        );
-      } else {
-        updatedSubcategories.push({
-          _id: `temp-${Date.now()}`,
+        console.log('Updating subcategory:', { id: editSubcategoryId, name: newSubcategoryName }); // Debug log
+        await adminApi.updateCategory(editSubcategoryId, {
           name: newSubcategoryName,
-          parentCategory: {
-            _id: parentId,
-            name: categories.find((cat) => cat._id === parentId)?.name || '',
-          },
-          status: 'active',
+          parentCategory: parentId,
         });
+        setAlert({ type: 'success', message: 'Subcategory updated successfully', onClose: () => setAlert(null) });
+      } else {
+        console.log('Creating subcategory:', { name: newSubcategoryName, parentCategory: parentId }); // Debug log
+        await adminApi.createCategory({
+          name: newSubcategoryName,
+          parentCategory: parentId,
+        });
+        setAlert({ type: 'success', message: 'Subcategory created successfully', onClose: () => setAlert(null) });
       }
 
-      const parentCategory = categories.find((cat) => cat._id === parentId);
-      await adminApi.updateCategory(parentId, {
-        name: parentCategory.name,
-        parentCategory: parentCategory.parentCategory || null,
-        categoryOption: updatedSubcategories,
-      });
-
-      setAlert({
-        type: 'success',
-        message: editSubcategoryId ? 'Subcategory updated successfully' : 'Subcategory created successfully',
-        onClose: () => setAlert(null),
-      });
-
-      const refreshedSubcategories = await fetchSubcategories(parentId);
+      // Refetch categories to update modal
+      const updatedCategories = await adminApi.getAllCategories();
+      const updatedCategory = updatedCategories.data.find((cat) => cat._id === parentId);
+      console.log('Updated subcategories:', updatedCategory?.categoryOption); // Debug log
       setSubcategoryModal({
-        ...subcategoryModal,
-        subcategories: refreshedSubcategories,
+        isOpen: true, // Keep modal open
+        parentId,
+        subcategories: updatedCategory?.categoryOption || [],
         newSubcategoryName: '',
         editSubcategoryId: null,
       });
-
-      fetchCategories();
+      setCategories(updatedCategories.data || []);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleEditSubcategory = (subcategory) => {
+    console.log('Editing subcategory:', subcategory); // Debug log
     setSubcategoryModal({
       ...subcategoryModal,
       newSubcategoryName: subcategory.name,
@@ -182,29 +184,28 @@ const AdminCategories = () => {
   };
 
   const handleDeleteSubcategory = async (subcategoryId) => {
-    if (!window.confirm('Are you sure you want to delete this subcategory?')) return;
+    if (!window.confirm('Are you sure you want to soft-delete this subcategory?')) return;
     setLoading(true);
     setAlert(null);
     try {
-      const { parentId, subcategories } = subcategoryModal;
-      const updatedSubcategories = subcategories.filter((sub) => sub._id !== subcategoryId);
+      console.log('Deleting subcategory:', subcategoryId); // Debug log
+      await adminApi.deleteCategory(subcategoryId);
+      setAlert({ type: 'success', message: 'Subcategory marked as deleted', onClose: () => setAlert(null) });
 
-      const parentCategory = categories.find((cat) => cat._id === parentId);
-      await adminApi.updateCategory(parentId, {
-        name: parentCategory.name,
-        parentCategory: parentCategory.parentCategory || null,
-        categoryOption: updatedSubcategories,
-      });
-
-      setAlert({ type: 'success', message: 'Subcategory deleted successfully', onClose: () => setAlert(null) });
+      // Refetch categories to update modal
+      const updatedCategories = await adminApi.getAllCategories();
+      const updatedCategory = updatedCategories.data.find((cat) => cat._id === subcategoryModal.parentId);
+      console.log('Updated subcategories after delete:', updatedCategory?.categoryOption); // Debug log
       setSubcategoryModal({
-        ...subcategoryModal,
-        subcategories: updatedSubcategories,
+        isOpen: true, // Keep modal open
+        parentId: subcategoryModal.parentId,
+        subcategories: updatedCategory?.categoryOption || [],
+        newSubcategoryName: '',
+        editSubcategoryId: null,
       });
-
-      fetchCategories();
+      setCategories(updatedCategories.data || []);
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      handleError(error);
     } finally {
       setLoading(false);
     }
@@ -213,40 +214,28 @@ const AdminCategories = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Manage Categories</h2>
+    <div className="p-4 bg-[#1A2526] text-white">
+      <h2 className="text-2xl font-bold mb-4 text-blue-500">Manage Categories</h2>
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
       {/* Main Category Form */}
-      <form onSubmit={handleMainCategorySubmit} className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleMainCategoryChange}
-            placeholder="Category Name"
-            className="input input-bordered w-full"
-            required
-          />
-          <select
-            name="parentCategory"
-            value={formData.parentCategory}
-            onChange={handleMainCategoryChange}
-            className="select select-bordered w-full"
-          >
-            <option value="">No Parent</option>
-            {categories
-              .filter((cat) => cat._id !== editId)
-              .map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-          </select>
+      <form onSubmit={handleSubmit} className="mb-6 bg-[#1A2526] p-4 rounded-lg">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="label text-white">Category Name</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Category Name"
+              className="input input-bordered w-full text-black"
+              required
+            />
+          </div>
         </div>
         <div className="mt-4 flex space-x-2">
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600">
             {editId ? 'Update Category' : 'Create Category'}
           </button>
           {editId && (
@@ -254,9 +243,9 @@ const AdminCategories = () => {
               type="button"
               onClick={() => {
                 setEditId(null);
-                setFormData({ name: '', parentCategory: '' });
+                setFormData({ name: '' });
               }}
-              className="btn btn-ghost"
+              className="btn bg-orange-500 border-none hover:bg-orange-600 text-white"
             >
               Cancel
             </button>
@@ -267,26 +256,29 @@ const AdminCategories = () => {
       {/* Subcategory Modal */}
       {subcategoryModal.isOpen && (
         <dialog open className="modal">
-          <div className="modal-box bg-[#1A2526] text-white max-w-lg mx-auto p-4 sm:p-6">
-            <h3 className="font-bold text-lg sm:text-xl mb-4">
-              Subcategories for {categories.find((cat) => cat._id === subcategoryModal.parentId)?.name || 'Category'}
+          <div className="modal-box bg-[#1A2526] text-white max-w-lg p-6">
+            <h3 className="font-bold text-xl mb-4">
+              Subcategories for{' '}
+              {categories.find((cat) => cat._id === subcategoryModal.parentId)?.name || 'Category'}
             </h3>
 
             {/* Add/Edit Subcategory Form */}
             <form onSubmit={handleSubcategorySubmit} className="mb-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={subcategoryModal.newSubcategoryName}
-                  onChange={handleSubcategoryNameChange}
-                  placeholder="Subcategory Name"
-                  className="input input-bordered w-full text-sm sm:text-base"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="btn bg-highlight-teal border-none hover:bg-teal-600 text-sm sm:text-base"
-                >
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="label text-white">Subcategory Name</label>
+                  <input
+                    type="text"
+                    value={subcategoryModal.newSubcategoryName}
+                    onChange={handleSubcategoryNameChange}
+                    placeholder="Subcategory Name"
+                    className="input input-bordered w-full text-black"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600">
                   {subcategoryModal.editSubcategoryId ? 'Update' : 'Add'}
                 </button>
               </div>
@@ -295,8 +287,8 @@ const AdminCategories = () => {
             {/* Subcategories List */}
             {subcategoryModal.subcategories.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="table w-full">
-                  <thead>
+                <table className="table w-full bg-[#1A2526] text-white">
+                  <thead className="text-gray-300">
                     <tr>
                       <th>Name</th>
                       <th>Status</th>
@@ -304,26 +296,28 @@ const AdminCategories = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {subcategoryModal.subcategories.map((sub) => (
-                      <tr key={sub._id}>
-                        <td>{sub.name}</td>
-                        <td>{sub.status || 'N/A'}</td>
-                        <td>
-                          <button
-                            onClick={() => handleEditSubcategory(sub)}
-                            className="btn btn-warning btn-xs mr-2"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSubcategory(sub._id)}
-                            className="btn btn-error btn-xs"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {subcategoryModal.subcategories
+                      .filter((sub) => sub.status !== 'deleted')
+                      .map((sub) => (
+                        <tr key={sub._id}>
+                          <td>{sub.name}</td>
+                          <td>{sub.status || 'N/A'}</td>
+                          <td>
+                            <button
+                              onClick={() => handleEditSubcategory(sub)}
+                              className="btn btn-sm bg-blue-500 text-white mr-2 hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSubcategory(sub._id)}
+                              className="btn btn-sm btn-error text-white hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -334,7 +328,7 @@ const AdminCategories = () => {
             <div className="modal-action">
               <button
                 type="button"
-                className="btn btn-ghost text-sm sm:text-base"
+                className="btn bg-orange-500 border-none hover:bg-orange-600 text-white"
                 onClick={() =>
                   setSubcategoryModal({
                     isOpen: false,
@@ -352,52 +346,56 @@ const AdminCategories = () => {
         </dialog>
       )}
 
-      {/* Categories Table */}
-      <div className="overflow-x-auto">
-        <table className="table w-full">
-          <thead>
+      {/* Main Categories Table */}
+      <div className="overflow-x-auto rounded-lg">
+        <table className="table w-full bg-[#1A2526] text-white">
+          <thead className="text-blue-500">
             <tr>
               <th>Name</th>
-              <th>Parent Category</th>
-              <th>Subcategories</th>
               <th>Status</th>
+              <th>Subcategories</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {categories.map((category) => (
-              <tr key={category._id}>
-                <td>{category.name}</td>
-                <td>
-                  {category.parentCategory
-                    ? categories.find((c) => c._id === category.parentCategory)?.name || 'N/A'
-                    : 'None'}
-                </td>
-                <td>
-                  <button
-                    onClick={() => openSubcategoryModal(category._id)}
-                    className="btn btn-xs btn-outline btn-accent"
-                  >
-                    View Subcategories
-                  </button>
-                </td>
-                <td>{category.status}</td>
-                <td>
-                  <button
-                    onClick={() => handleEditMainCategory(category)}
-                    className="btn btn-warning btn-sm mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMainCategory(category._id)}
-                    className="btn btn-error btn-sm"
-                  >
-                    Delete
-                  </button>
+            {categories.length > 0 ? (
+              categories
+                .filter((cat) => !cat.parentCategory && cat.status !== 'deleted')
+                .map((category) => (
+                  <tr key={category._id}>
+                    <td>{category.name}</td>
+                    <td>{category.status || 'N/A'}</td>
+                    <td>
+                      <button
+                        onClick={() => openSubcategoryModal(category)}
+                        className="btn btn-sm bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        View ({(category.categoryOption || []).filter((sub) => sub.status !== 'deleted').length})
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleEdit(category)}
+                        className="btn btn-sm bg-blue-500 text-white mr-2 hover:bg-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(category._id)}
+                        className="btn btn-sm btn-error text-white hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="text-center text-gray-400">
+                  No categories found.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

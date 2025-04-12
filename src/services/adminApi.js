@@ -146,62 +146,63 @@ export const deleteBuyer = async (buyerId) => {
   const response = await apiClient.delete(`/admin/buyers/${buyerId}`);
   return response.data;
 };
-
-/**
+ 
+ /**
  * Gets all categories
- * @returns {Promise<{ success: boolean, data: Array }>}
+ * @returns {Promise<{ success: boolean, data: Array<{ _id: string, name: string, parentCategory: string | null, status: string, createdAt: string, updatedAt: string, __v: number, categoryOption?: Array<{ _id: string, name: string, parentCategory: { _id: string, name: string }, status: string, createdAt: string, updatedAt: string, __v: number }> }> }>}
  */
 export const getAllCategories = async () => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view categories', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to view categories', code: 401, isBigError: false };
+  }
   const response = await apiClient.get('/admin/categories');
   return response.data;
 };
 
 /**
- * Gets a single category by ID
- * @param {string} categoryId - Category ID
- * @returns {Promise<{ success: boolean, data: Array }>}
+ * Creates a main or subcategory
+ * @param {{ name: string, parentCategory?: string | null }} categoryData - Category details
+ * @returns {Promise<{ success: boolean, data: { categoryId: string, name: string } }>}
  */
-export const getCategoryById = async (categoryId) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view category', code: 401, isBigError: false };
-  const response = await apiClient.get(`/admin/categories/${categoryId}`);
-  return response.data;
-};
-
-/**
- * Creates a new category
- * @param {{ name: string, parentCategory?: string }} categoryData - Category details
- * @returns {Promise<{ success: boolean, data: { categoryId: string } }>}
- */
-export const createCategory = async ({ name, parentCategory }) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to create a category', code: 401, isBigError: false };
+export const createCategory = async ({ name, parentCategory = null }) => {
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to create a category', code: 401, isBigError: false };
+  }
   const response = await apiClient.post('/admin/categories', { name, parentCategory });
   return response.data;
 };
 
 /**
- * Updates a category
- * @param {string} categoryId - Category ID
- * @param {{ name?: string, parentCategory?: string, categoryOption?: Array }} categoryData - Category details to update
- * @returns {Promise<{ success: boolean, message: string }>}
+ * Updates a category or subcategory
+ * @param {string} categoryId - Category or subcategory ID
+ * @param {{ name?: string, parentCategory?: string | null, categoryOption?: Array<{ _id?: string, name: string, parentCategory?: { _id: string, name: string }, status?: string }> }} categoryData - Category or subcategory details
+ * @returns {Promise<{ success: boolean, message: string, data: { categoryId: string, name: string } }>}
  */
 export const updateCategory = async (categoryId, { name, parentCategory, categoryOption }) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to update a category', code: 401, isBigError: false };
-  const response = await apiClient.put(`/admin/categories/${categoryId}`, { name, parentCategory, categoryOption });
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to update a category', code: 401, isBigError: false };
+  }
+  const response = await apiClient.put(`/admin/categories/${categoryId}`, {
+    name,
+    parentCategory,
+    categoryOption,
+  });
   return response.data;
 };
 
 /**
- * Deletes a category
- * @param {string} categoryId - Category ID
+ * Deletes a category or subcategory (soft delete)
+ * @param {string} categoryId - Category or subcategory ID
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteCategory = async (categoryId) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to delete a category', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to delete a category', code: 401, isBigError: false };
+  }
   const response = await apiClient.delete(`/admin/categories/${categoryId}`);
   return response.data;
 };
-
+ 
 /**
  * Gets all orders
  * @param {{ status?: string, district?: string, startDate?: string, endDate?: string }} params - Filter parameters
