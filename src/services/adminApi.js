@@ -34,10 +34,12 @@ export const deleteAdmin = async (adminId) => {
 
 /**
  * Gets all couriers
- * @returns {Promise<{ success: boolean, data: Array }>}
+ * @returns {Promise<{ success: boolean, data: Array<{ _id: string, email: string, name: string, phone: string, region: string, status: string }> }>}
  */
 export const getAllCouriers = async () => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view couriers', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to view couriers', code: 401, isBigError: false };
+  }
   const response = await apiClient.get('/admin/couriers');
   return response.data;
 };
@@ -48,7 +50,9 @@ export const getAllCouriers = async () => {
  * @returns {Promise<{ success: boolean, data: { courierId: string } }>}
  */
 export const createCourier = async ({ email, password, name, phone, region }) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to create a courier', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to create a courier', code: 401, isBigError: false };
+  }
   const response = await apiClient.post('/admin/couriers', { email, password, name, phone, region });
   return response.data;
 };
@@ -60,7 +64,9 @@ export const createCourier = async ({ email, password, name, phone, region }) =>
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const updateCourier = async (courierId, { email, name, phone, region }) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to update a courier', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to update a courier', code: 401, isBigError: false };
+  }
   const response = await apiClient.put(`/admin/couriers/${courierId}`, { email, name, phone, region });
   return response.data;
 };
@@ -71,7 +77,9 @@ export const updateCourier = async (courierId, { email, name, phone, region }) =
  * @returns {Promise<{ success: boolean, message: string }>}
  */
 export const deleteCourier = async (courierId) => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to delete a courier', code: 401, isBigError: false };
+  if (!isAuthenticated()) {
+    throw { message: 'User must be logged in to delete a courier', code: 401, isBigError: false };
+  }
   const response = await apiClient.delete(`/admin/couriers/${courierId}`);
   return response.data;
 };
@@ -218,12 +226,76 @@ export const getAllProducts = async ({ status, category, sellerId } = {}) => {
 
 /**
  * Gets admin analytics
- * @returns {Promise<{ success: boolean, data: { totalOrders: number, totalRevenue: number, usersByRole: Object, orderStatusBreakdown: Object, topProducts: Array, topSellers: Array, courierPerformance: Array } }>}
- */
+ * @returns {Promise<{
+*   success: boolean,
+*   data: {
+*     totalOrders: number,
+*     totalRevenue: number,
+*     usersByRole: {
+*       courier: number,
+*       seller: number,
+*       admin: number,
+*       buyer: number
+*     },
+*     orderStatusBreakdown: { [key: string]: number },
+*     topProducts: Array<{
+*       _id: string,
+*       title: string,
+*       description: string,
+*       price: number,
+*       category: { _id: string, name: string },
+*       stock: number,
+*       condition: string,
+*       brand: string,
+*       oem: string,
+*       aftermarket: boolean,
+*       material: string,
+*       makeModel: Array<{ make: string, model: string, _id: string }>,
+*       years: Array<number>,
+*       availability: string,
+*       images: Array<string>,
+*       sellerId: string | null,
+*       status: string,
+*       createdAt: string,
+*       updatedAt: string,
+*       __v: number
+*     }>,
+*     topSellers: Array<{
+*       _id: string,
+*       role: string,
+*       email: string,
+*       password: string,
+*       name: string,
+*       phone: string,
+*       status: string,
+*       createdAt: string,
+*       updatedAt: string,
+*       __v: number,
+*       addresses: Array<{
+*         street: string,
+*         city: string,
+*         country: string,
+*         postalCode: string,
+*         isDefault: boolean,
+*         _id: string
+*       }>,
+*       profileImage: string
+*     }>,
+*     courierPerformance: Array<{
+*       _id: string,
+*       delivered: number,
+*       failed: number,
+*       name: string
+*     }>
+*   }
+* }>}
+*/
 export const getAnalytics = async () => {
-  if (!isAuthenticated()) throw { message: 'User must be logged in to view analytics', code: 401, isBigError: false };
-  const response = await apiClient.get('/admin/analytics');
-  return response.data;
+ if (!isAuthenticated()) {
+   throw { message: 'User must be logged in to view analytics', code: 401, isBigError: false };
+ }
+ const response = await apiClient.get('/admin/analytics');
+ return response.data;
 };
 
 export default {
