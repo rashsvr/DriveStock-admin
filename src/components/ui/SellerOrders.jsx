@@ -200,11 +200,9 @@ const SellerOrders = () => {
               className="select select-bordered w-full text-black"
             >
               <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
               <option value="Processing">Processing</option>
               <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Cancelled">Cancelled</option>
             </select>
           </div>
           <div>
@@ -273,11 +271,9 @@ const SellerOrders = () => {
                           className="select select-bordered select-sm text-black"
                         >
                           <option value="">Select Status</option>
-                          <option value="Pending">Pending</option>
-                          <option value="Processing">Processing</option>
-                          <option value="Shipped">Shipped</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Processing">Processing</option>
+              <option value="Shipped">Shipped</option>
                         </select>
                         <button
                           onClick={() => updateStatus(order._id)}
