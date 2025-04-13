@@ -54,7 +54,7 @@ export const getSellerProducts = async ({ page = 1, limit = 10, status, category
   const params = { page, limit };
   if (status) params.status = status;
   if (category) params.category = category;
-  const response = await apiClient.get('/api/seller/products', { params });
+  const response = await apiClient.get('/seller/products', { params });
   return response.data;
 };
 
