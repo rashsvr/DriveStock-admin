@@ -1,4 +1,5 @@
 import apiClient, { isAuthenticated, apiRequest } from './apiClient';
+import { uploadMedia } from './sharedApi';
 
 export const createProduct = async ({
   title,
@@ -31,7 +32,7 @@ export const createProduct = async ({
     imageUrl = uploadResponse.data[0].url;
   }
 
-  const response = await apiClient.post('/api/seller/products', {
+  const response = await apiClient.post('/seller/products', {
     title,
     description,
     price,
@@ -58,7 +59,27 @@ export const getSellerProducts = async ({ page = 1, limit = 10, status, category
   return response.data;
 };
 
-export const updateProduct = async (productId, { price, stock, description, image }) => {
+/**
+ * Updates a product with all fields
+ * @param {string} productId - Product ID
+ * @param {Object} productData - Product details to update
+ * @returns {Promise<{ success: boolean, message: string, data: { productId: string, title: string } }>}
+ */
+export const updateProduct = async (productId, {
+  title,
+  description,
+  price,
+  category,
+  stock,
+  condition,
+  brand,
+  oem,
+  aftermarket,
+  material,
+  makeModel,
+  years,
+  image,
+}) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to update a product', code: 401, isBigError: false };
 
   let imageUrl = '';
@@ -75,16 +96,29 @@ export const updateProduct = async (productId, { price, stock, description, imag
     imageUrl = uploadResponse.data[0].url;
   }
 
-  const updateData = { price, stock, description };
+  const updateData = {
+    title,
+    description,
+    price,
+    category,
+    stock,
+    condition,
+    brand,
+    oem,
+    aftermarket,
+    material,
+    makeModel,
+    years,
+  };
   if (imageUrl) updateData.images = [imageUrl];
 
-  const response = await apiClient.put(`/api/seller/products/${productId}`, updateData);
+  const response = await apiClient.put(`/seller/products/${productId}`, updateData);
   return response.data;
 };
 
 export const deleteProduct = async (productId) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete a product', code: 401, isBigError: false };
-  const response = await apiClient.delete(`/api/seller/products/${productId}`);
+  const response = await apiClient.delete(`/seller/products/${productId}`);
   return response.data;
 };
 
@@ -122,6 +156,17 @@ export const getAnalytics = async () => {
   return response.data;
 };
 
+// New function: getAllCategories
+/**
+ * Gets all categories
+ * @returns {Promise<{ success: boolean, data: Array<{ _id: string, name: string, parentCategory: string | null, categoryOption?: Array }> }>}
+ */
+export const getAllCategories = async () => {
+  if (!isAuthenticated()) throw { message: 'User must be logged in to view categories', code: 401, isBigError: false };
+  const response = await apiClient.get('/seller/categories');
+  return response.data;
+};
+
 export default {
   createProduct: (productData) => apiRequest(() => createProduct(productData)),
   getSellerProducts: (params) => apiRequest(() => getSellerProducts(params)),
@@ -132,4 +177,5 @@ export default {
   updateOrderStatus: (orderId, statusData) => apiRequest(() => updateOrderStatus(orderId, statusData)),
   cancelOrder: (orderId) => apiRequest(() => cancelOrder(orderId)),
   getAnalytics: () => apiRequest(() => getAnalytics()),
+  getAllCategories: () => apiRequest(() => getAllCategories()),
 };

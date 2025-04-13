@@ -117,18 +117,18 @@ const SellerProducts = () => {
 
   const openEditModal = (product) => {
     setFormData({
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      category: product.category._id,
-      stock: product.stock,
-      condition: product.condition,
-      brand: product.brand,
-      oem: product.oem,
-      aftermarket: product.aftermarket,
-      material: product.material,
-      makeModel: product.makeModel,
-      years: product.years,
+      title: product.title || '',
+      description: product.description || '',
+      price: product.price || '',
+      category: product.category?._id || '',
+      stock: product.stock || '',
+      condition: product.condition || 'New',
+      brand: product.brand || '',
+      oem: product.oem || '',
+      aftermarket: !!product.aftermarket,
+      material: product.material || '',
+      makeModel: product.makeModel?.length > 0 ? product.makeModel : [{ make: '', model: '' }],
+      years: product.years || [],
       image: null,
     });
     setIsEditing(true);
@@ -139,7 +139,16 @@ const SellerProducts = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === 'file') {
-      setFormData({ ...formData, image: files[0] });
+      const file = files[0];
+      if (file && !['image/jpeg', 'image/png'].includes(file.type)) {
+        setAlert({
+          type: 'error',
+          message: 'Only JPEG or PNG images are allowed.',
+          onClose: () => setAlert(null),
+        });
+        return;
+      }
+      setFormData({ ...formData, image: file });
     } else if (type === 'checkbox') {
       setFormData({ ...formData, [name]: checked });
     } else {
@@ -178,12 +187,60 @@ const SellerProducts = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validation
+    if (!formData.title) {
+      setAlert({
+        type: 'error',
+        message: 'Title is required.',
+        onClose: () => setAlert(null),
+      });
+      setLoading(false);
+      return;
+    }
+    if (!formData.category) {
+      setAlert({
+        type: 'error',
+        message: 'Category is required.',
+        onClose: () => setAlert(null),
+      });
+      setLoading(false);
+      return;
+    }
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      setAlert({
+        type: 'error',
+        message: 'Price must be a positive number.',
+        onClose: () => setAlert(null),
+      });
+      setLoading(false);
+      return;
+    }
+    if (!formData.stock || parseInt(formData.stock) < 0) {
+      setAlert({
+        type: 'error',
+        message: 'Stock must be a non-negative number.',
+        onClose: () => setAlert(null),
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isEditing) {
         await sellerApi.updateProduct(selectedProduct._id, {
-          price: parseFloat(formData.price),
-          stock: parseInt(formData.stock),
+          title: formData.title,
           description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.category,
+          stock: parseInt(formData.stock),
+          condition: formData.condition,
+          brand: formData.brand,
+          oem: formData.oem,
+          aftermarket: formData.aftermarket,
+          material: formData.material,
+          makeModel: formData.makeModel,
+          years: formData.years,
           image: formData.image,
         });
         setAlert({
@@ -310,18 +367,22 @@ const SellerProducts = () => {
               className="select select-bordered w-full text-black"
             >
               <option value="">All Categories</option>
-              {categories
-                .filter((cat) => !cat.parentCategory)
-                .map((cat) => (
-                  <React.Fragment key={cat._id}>
-                    <option value={cat._id}>{cat.name}</option>
-                    {cat.categoryOption?.map((sub) => (
-                      <option key={sub._id} value={sub._id}>
-                        {'\u00A0\u00A0'} {sub.name}
-                      </option>
-                    ))}
-                  </React.Fragment>
-                ))}
+              {categories.length > 0 ? (
+                categories
+                  .filter((cat) => !cat.parentCategory)
+                  .map((cat) => (
+                    <React.Fragment key={cat._id}>
+                      <option value={cat._id}>{cat.name}</option>
+                      {cat.categoryOption?.map((sub) => (
+                        <option key={sub._id} value={sub._id}>
+                          {'\u00A0\u00A0'} {sub.name}
+                        </option>
+                      ))}
+                    </React.Fragment>
+                  ))
+              ) : (
+                <option disabled>No categories available</option>
+              )}
             </select>
           </div>
         </div>
@@ -359,6 +420,15 @@ const SellerProducts = () => {
                     <td>{product.category?.name || 'N/A'}</td>
                     <td>{product.status || 'N/A'}</td>
                     <td>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(product);
+                        }}
+                        className="btn btn-sm bg-blue-500 border-none hover:bg-blue-600 text-white mr-2"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -411,12 +481,7 @@ const SellerProducts = () => {
                               {new Date(product.updatedAt).toLocaleString()}
                             </p>
                           </div>
-                          <button
-                            onClick={() => openEditModal(product)}
-                            className="btn bg-blue-500 border-none hover:bg-blue-600 text-white"
-                          >
-                            Edit Product
-                          </button>
+                          {/* Removed Edit Product button from here */}
                         </div>
                       </td>
                     </tr>
@@ -463,146 +528,146 @@ const SellerProducts = () => {
               {isEditing ? 'Edit Product' : 'Add Product'}
             </h3>
             <form onSubmit={handleSubmit}>
-              {!isEditing && (
-                <>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Title</label>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Title</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Category</label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  required
+                  className="select select-bordered w-full text-black"
+                >
+                  <option value="">Select Category</option>
+                  {categories.length > 0 ? (
+                    categories
+                      .filter((cat) => !cat.parentCategory)
+                      .map((cat) => (
+                        <React.Fragment key={cat._id}>
+                          <option value={cat._id}>{cat.name}</option>
+                          {cat.categoryOption?.map((sub) => (
+                            <option key={sub._id} value={sub._id}>
+                              {'\u00A0\u00A0'} {sub.name}
+                            </option>
+                          ))}
+                        </React.Fragment>
+                      ))
+                  ) : (
+                    <option disabled>No categories available</option>
+                  )}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Condition</label>
+                <select
+                  name="condition"
+                  value={formData.condition}
+                  onChange={handleInputChange}
+                  required
+                  className="select select-bordered w-full text-black"
+                >
+                  <option value="New">New</option>
+                  <option value="Used">Used</option>
+                  <option value="Refurbished">Refurbished</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Brand</label>
+                <input
+                  type="text"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">OEM</label>
+                <input
+                  type="text"
+                  name="oem"
+                  value={formData.oem}
+                  onChange={handleInputChange}
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Aftermarket</label>
+                <input
+                  type="checkbox"
+                  name="aftermarket"
+                  checked={formData.aftermarket}
+                  onChange={handleInputChange}
+                  className="checkbox"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Material</label>
+                <input
+                  type="text"
+                  name="material"
+                  value={formData.material}
+                  onChange={handleInputChange}
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Make & Model</label>
+                {formData.makeModel.map((mm, index) => (
+                  <div key={index} className="flex space-x-2 mb-2">
                     <input
                       type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      required
-                      className="input input-bordered w-full text-black"
+                      placeholder="Make"
+                      value={mm.make}
+                      onChange={(e) => handleMakeModelChange(index, 'make', e.target.value)}
+                      className="input input-bordered w-1/2 text-black"
                     />
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Category</label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      required
-                      className="select select-bordered w-full text-black"
-                    >
-                      <option value="">Select Category</option>
-                      {categories
-                        .filter((cat) => !cat.parentCategory)
-                        .map((cat) => (
-                          <React.Fragment key={cat._id}>
-                            <option value={cat._id}>{cat.name}</option>
-                            {cat.categoryOption?.map((sub) => (
-                              <option key={sub._id} value={sub._id}>
-                                {'\u00A0\u00A0'} {sub.name}
-                              </option>
-                            ))}
-                          </React.Fragment>
-                        ))}
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Condition</label>
-                    <select
-                      name="condition"
-                      value={formData.condition}
-                      onChange={handleInputChange}
-                      required
-                      className="select select-bordered w-full text-black"
-                    >
-                      <option value="New">New</option>
-                      <option value="Used">Used</option>
-                      <option value="Refurbished">Refurbished</option>
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Brand</label>
                     <input
                       type="text"
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleInputChange}
-                      className="input input-bordered w-full text-black"
+                      placeholder="Model"
+                      value={mm.model}
+                      onChange={(e) => handleMakeModelChange(index, 'model', e.target.value)}
+                      className="input input-bordered w-1/2 text-black"
                     />
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMakeModel(index)}
+                        className="btn btn-sm bg-red-600 border-none hover:bg-red-700 text-white"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">OEM</label>
-                    <input
-                      type="text"
-                      name="oem"
-                      value={formData.oem}
-                      onChange={handleInputChange}
-                      className="input input-bordered w-full text-black"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Aftermarket</label>
-                    <input
-                      type="checkbox"
-                      name="aftermarket"
-                      checked={formData.aftermarket}
-                      onChange={handleInputChange}
-                      className="checkbox"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Material</label>
-                    <input
-                      type="text"
-                      name="material"
-                      value={formData.material}
-                      onChange={handleInputChange}
-                      className="input input-bordered w-full text-black"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Make & Model</label>
-                    {formData.makeModel.map((mm, index) => (
-                      <div key={index} className="flex space-x-2 mb-2">
-                        <input
-                          type="text"
-                          placeholder="Make"
-                          value={mm.make}
-                          onChange={(e) => handleMakeModelChange(index, 'make', e.target.value)}
-                          className="input input-bordered w-1/2 text-black"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Model"
-                          value={mm.model}
-                          onChange={(e) => handleMakeModelChange(index, 'model', e.target.value)}
-                          className="input input-bordered w-1/2 text-black"
-                        />
-                        {index > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => removeMakeModel(index)}
-                            className="btn btn-sm bg-red-600 border-none hover:bg-red-700 text-white"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={addMakeModel}
-                      className="btn btn-sm bg-teal-500 border-none hover:bg-teal-600 text-white mt-2"
-                    >
-                      Add Make/Model
-                    </button>
-                  </div>
-                  <div className="mb-4">
-                    <label className="label text-sm text-white">Years (comma-separated)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., 2015,2020"
-                      value={formData.years.join(',')}
-                      onChange={handleYearsChange}
-                      className="input input-bordered w-full text-black"
-                    />
-                  </div>
-                </>
-              )}
+                ))}
+                <button
+                  type="button"
+                  onClick={addMakeModel}
+                  className="btn btn-sm bg-teal-500 border-none hover:bg-teal-600 text-white mt-2"
+                >
+                  Add Make/Model
+                </button>
+              </div>
+              <div className="mb-4">
+                <label className="label text-sm text-white">Years (comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g., 2015,2020"
+                  value={formData.years.join(',')}
+                  onChange={handleYearsChange}
+                  className="input input-bordered w-full text-black"
+                />
+              </div>
               <div className="mb-4">
                 <label className="label text-sm text-white">Description</label>
                 <textarea
