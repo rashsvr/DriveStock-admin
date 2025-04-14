@@ -162,7 +162,8 @@ const AdminOrders = () => {
           <thead className="text-blue-500">
             <tr>
               <th>ID</th>
-              <th>Status</th>
+              <th>Seller Status</th>
+              <th>Courier Status</th>
               <th>District</th>
               <th>Date</th>
               <th>Total Amount</th>
@@ -175,16 +176,17 @@ const AdminOrders = () => {
               orders.map((order) => (
                 <tr key={order._id}>
                   <td>{order._id}</td>
-                  <td>{order.status || 'N/A'}</td>
+                  <td>{order.item.sellerStatus || 'N/A'}</td>
+                  <td>{order.item.courierStatus || 'N/A'}</td>
                   <td>{order.shippingAddress?.district || 'N/A'}</td>
-                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td>{new Date(order.orderCreatedAt).toLocaleDateString()}</td>
                   <td>
-                    {order.total
-                      ? `$${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                    {order.item.price
+                      ? `$${order.item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
                       : 'N/A'}
                   </td>
-                  <td>{order.buyerId?._id || 'N/A'}</td>
-                  <td>{order.sellerId?._id || 'N/A'}</td>
+                  <td>{order.buyer?._id || 'N/A'}</td>
+                  <td>{order.item.product.seller || 'N/A'}</td>
                 </tr>
               ))
             ) : (
