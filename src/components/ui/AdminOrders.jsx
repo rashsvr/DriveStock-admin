@@ -13,6 +13,7 @@ const AdminOrders = () => {
   });
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [expandedRow, setExpandedRow] = useState(null); // Track the expanded row
 
   useEffect(() => {
     fetchOrders();
@@ -21,16 +22,15 @@ const AdminOrders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Clean filters: only include non-empty values
       const params = {};
       if (filters.status) params.status = filters.status;
       if (filters.district) params.district = filters.district;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
-      console.log('Fetching orders with params:', params); // Debug log
+      console.log('Fetching orders with params:', params);
       const response = await adminApi.getAllOrders(params);
-      console.log('Orders response:', response.data); // Debug log
+      console.log('Orders response:', response.data);
       setOrders(response.data || []);
     } catch (error) {
       const status = error.code || error.response?.status;
@@ -65,9 +65,9 @@ const AdminOrders = () => {
     setFilters({ status: '', district: '', startDate: '', endDate: '' });
     setLoading(true);
     try {
-      console.log('Resetting filters, fetching all orders'); // Debug log
+      console.log('Resetting filters, fetching all orders');
       const response = await adminApi.getAllOrders({});
-      console.log('Reset orders response:', response.data); // Debug log
+      console.log('Reset orders response:', response.data);
       setOrders(response.data || []);
     } catch (error) {
       const status = error.code || error.response?.status;
@@ -86,6 +86,10 @@ const AdminOrders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleRow = (orderId) => {
+    setExpandedRow(expandedRow === orderId ? null : orderId);
   };
 
   if (loading) return <LoadingAnimation />;
@@ -174,24 +178,100 @@ const AdminOrders = () => {
           <tbody>
             {orders.length > 0 ? (
               orders.map((order) => (
-                <tr key={order._id}>
-                  <td>{order._id}</td>
-                  <td>{order.item.sellerStatus || 'N/A'}</td>
-                  <td>{order.item.courierStatus || 'N/A'}</td>
-                  <td>{order.shippingAddress?.district || 'N/A'}</td>
-                  <td>{new Date(order.orderCreatedAt).toLocaleDateString()}</td>
-                  <td>
-                    {order.item.price
-                      ? `$${order.item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-                      : 'N/A'}
-                  </td>
-                  <td>{order.buyer?._id || 'N/A'}</td>
-                  <td>{order.item.product.seller || 'N/A'}</td>
-                </tr>
+                <React.Fragment key={order._id + order.item.product._id}>
+                  <tr
+                    onClick={() => toggleRow(order._id + order.item.product._id)}
+                    className="cursor-pointer hover:bg-gray-700"
+                  >
+                    <td>{order.orderId}</td>
+                    <td>{order.item.sellerStatus || 'N/A'}</td>
+                    <td>{order.item.courierStatus || 'N/A'}</td>
+                    <td>{order.shippingAddress?.district || 'N/A'}</td>
+                    <td>{new Date(order.orderCreatedAt).toLocaleDateString()}</td>
+                    <td>
+                      {order.item.price
+                        ? `$${order.item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                        : 'N/A'}
+                    </td>
+                    <td>{order.buyer?._id || 'N/A'}</td>
+                    <td>{order.item.product.seller || 'N/A'}</td>
+                  </tr>
+                  {expandedRow === (order._id + order.item.product._id) && (
+                    <tr>
+                      <td colSpan="8" className="p-4 bg-gray-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Buyer Information */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-blue-400">Buyer Information</h3>
+                            <p><strong>Name:</strong> {order.buyer.name}</p>
+                            <p><strong>Email:</strong> {order.buyer.email}</p>
+                            <p><strong>Phone:</strong> {order.buyer.phone}</p>
+                          </div>
+
+                          {/* Item Details */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-blue-400">Item Details</h3>
+                            <p><strong>Product Title:</strong> {order.item.product.title}</p>
+                            <p><strong>Brand:</strong> {order.item.product.brand}</p>
+                            <p><strong>Condition:</strong> {order.item.product.condition}</p>
+                            <p><strong>Quantity:</strong> {order.item.quantity}</p>
+                            <p><strong>Price per Unit:</strong> ${order.item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                            <p><strong>Images:</strong> {order.item.product.images.length > 0 ? (
+                              <a href={order.item.product.images[0]} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                View Image
+                              </a>
+                            ) : 'N/A'}</p>
+                          </div>
+
+                          {/* Shipping Address */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-blue-400">Shipping Address</h3>
+                            <p><strong>Street:</strong> {order.shippingAddress.street}</p>
+                            <p><strong>City:</strong> {order.shippingAddress.city}</p>
+                            <p><strong>District:</strong> {order.shippingAddress.district}</p>
+                            <p><strong>Country:</strong> {order.shippingAddress.country}</p>
+                            <p><strong>Postal Code:</strong> {order.shippingAddress.postalCode}</p>
+                          </div>
+
+                          {/* Courier Details */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-blue-400">Courier Details</h3>
+                            {order.item.courierDetails?.courierId ? (
+                              <>
+                                <p><strong>Courier Name:</strong> {order.item.courierDetails.courierId.name}</p>
+                                <p><strong>Phone:</strong> {order.item.courierDetails.courierId.phone}</p>
+                                <p><strong>Region:</strong> {order.item.courierDetails.courierId.region}</p>
+                                <p><strong>Tracking Number:</strong> {order.item.courierDetails.trackingNumber || 'N/A'}</p>
+                              </>
+                            ) : (
+                              <p>No courier assigned.</p>
+                            )}
+                          </div>
+
+                          {/* Status History */}
+                          <div className="col-span-1 md:col-span-2">
+                            <h3 className="text-lg font-semibold text-blue-400">Status History</h3>
+                            {order.item.statusHistory.length > 0 ? (
+                              <ul className="list-disc pl-5">
+                                {order.item.statusHistory.map((status, index) => (
+                                  <li key={index}>
+                                    {status.status} - Updated by {status.updatedBy.role} ({status.updatedBy.userId || 'System'}) on {new Date(status.updatedAt).toLocaleString()}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p>No status history available.</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="text-center text-gray-400">
+                <td colSpan="8" className="text-center text-gray-400">
                   No orders found.
                 </td>
               </tr>
