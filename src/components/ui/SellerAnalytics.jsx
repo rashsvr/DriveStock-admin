@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import sellerApi from '../../services/sellerApi';
 import Alert from './Alert';
 import LoadingAnimation from '../function/LoadingAnimation';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const SellerAnalytics = () => {
   const [analytics, setAnalytics] = useState({
@@ -10,9 +15,16 @@ const SellerAnalytics = () => {
     statusBreakdown: {},
     topProducts: [],
     lowStockProducts: [],
+    earnings: {
+      daily: [],
+      weekly: [],
+      monthly: [],
+      yearly: [],
+    },
   });
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [chartTimeFrame, setChartTimeFrame] = useState('daily'); // Default to daily earnings
 
   useEffect(() => {
     fetchAnalytics();
@@ -28,6 +40,55 @@ const SellerAnalytics = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Prepare chart data based on selected time frame
+  const getChartData = () => {
+    const data = analytics.earnings[chartTimeFrame];
+    const labels = data.map(item => {
+      if (chartTimeFrame === 'daily') return item.date;
+      if (chartTimeFrame === 'weekly') return `Week ${item.week.split('-')[1]} (${item.week.split('-')[0]})`;
+      if (chartTimeFrame === 'monthly') return item.month;
+      return item.year;
+    });
+    const revenues = data.map(item => item.revenue);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Revenue ($)',
+          data: revenues,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          fill: false,
+          tension: 0.1,
+        },
+      ],
+    };
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: `${chartTimeFrame.charAt(0).toUpperCase() + chartTimeFrame.slice(1)} Earnings`,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Revenue ($)',
+        },
+      },
+    },
   };
 
   if (loading) return <LoadingAnimation />;
@@ -50,6 +111,31 @@ const SellerAnalytics = () => {
             <h3 className="text-lg font-semibold">Total Revenue</h3>
             <p className="text-2xl">${analytics.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Earnings Graph */}
+      <div className="mb-6">
+        <h3 className="text-xl font-bold mb-2">Earnings Over Time</h3>
+        <div className="bg-[#1A2526] p-4 rounded-lg text-white">
+          <div className="mb-4">
+            <label className="mr-2 text-sm">Time Frame:</label>
+            <select
+              value={chartTimeFrame}
+              onChange={(e) => setChartTimeFrame(e.target.value)}
+              className="select select-bordered text-black"
+            >
+              <option value="daily">Daily (Last 7 Days)</option>
+              <option value="weekly">Weekly (Last 4 Weeks)</option>
+              <option value="monthly">Monthly (Last 12 Months)</option>
+              <option value="yearly">Yearly (Last 5 Years)</option>
+            </select>
+          </div>
+          {analytics.earnings[chartTimeFrame].length > 0 ? (
+            <Line data={getChartData()} options={chartOptions} />
+          ) : (
+            <p className="text-gray-400">No earnings data available for this time frame.</p>
+          )}
         </div>
       </div>
 
@@ -87,7 +173,6 @@ const SellerAnalytics = () => {
           <table className="table w-full bg-[#1A2526] text-white">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Title</th>
                 <th>Sales</th>
                 <th>Revenue</th>
@@ -95,17 +180,16 @@ const SellerAnalytics = () => {
             </thead>
             <tbody>
               {analytics.topProducts.length > 0 ? (
-                analytics.topProducts.map((product) => (
-                  <tr key={product._id}>
-                    <td>{product._id}</td>
+                analytics.topProducts.map((product, index) => (
+                  <tr key={index}>
                     <td>{product.title}</td>
-                    <td>{product.sales}</td>
+                    <td>{product.totalSold}</td>
                     <td>${product.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="text-center text-gray-400">
+                  <td colSpan="3" className="text-center text-gray-400">
                     No top products available.
                   </td>
                 </tr>
@@ -122,23 +206,21 @@ const SellerAnalytics = () => {
           <table className="table w-full bg-[#1A2526] text-white">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Title</th>
                 <th>Stock</th>
               </tr>
             </thead>
             <tbody>
               {analytics.lowStockProducts.length > 0 ? (
-                analytics.lowStockProducts.map((product) => (
-                  <tr key={product._id}>
-                    <td>{product._id}</td>
+                analytics.lowStockProducts.map((product, index) => (
+                  <tr key={index}>
                     <td>{product.title}</td>
                     <td>{product.stock}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="text-center text-gray-400">
+                  <td colSpan="2" className="text-center text-gray-400">
                     No low stock products available.
                   </td>
                 </tr>

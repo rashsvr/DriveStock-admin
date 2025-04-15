@@ -112,18 +112,13 @@ const AdminAnalytics = () => {
       <AnalyticsTable
         title="Top Products"
         data={analytics.topProducts}
-        columns={['Title', 'Price', 'Category', 'Stock', 'Make/Model']}
+        columns={['Title', 'Price',  'Stock', 'Income']}
         renderRow={(product) => (
           <tr key={product._id} className="hover:bg-[#243233] transition-colors duration-200">
             <td>{product.title}</td>
-            <td>${product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-            <td>{product.category?.name || 'N/A'}</td>
-            <td>{product.stock}</td>
-            <td>
-              {product.makeModel?.length > 0
-                ? product.makeModel.map((mm) => `${mm.make} ${mm.model}`).join(', ')
-                : 'N/A'}
-            </td>
+            <td>{product.itemPrice?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || 'N/A'}</td>
+            <td>{product.presentStock}</td>
+            <td>{product.revenue}</td>
           </tr>
         )}
       />
@@ -132,17 +127,13 @@ const AdminAnalytics = () => {
       <AnalyticsTable
         title="Top Sellers"
         data={analytics.topSellers}
-        columns={['Name', 'Email', 'Phone', 'Primary Address']}
+        columns={['Name', 'Email', 'Phone', 'Total Earnings']}
         renderRow={(seller) => (
           <tr key={seller._id} className="hover:bg-[#243233] transition-colors duration-200">
             <td>{seller.name}</td>
             <td>{seller.email}</td>
             <td>{seller.phone || 'N/A'}</td>
-            <td>
-              {seller.addresses?.length > 0
-                ? seller.addresses.find((a) => a.isDefault)?.street || seller.addresses[0].street
-                : 'N/A'}
-            </td>
+            <td>{seller.totalEarnings || 'N/A'}</td>
           </tr>
         )}
       />
@@ -185,7 +176,7 @@ const AnalyticsTable = ({ title, data, columns, renderRow }) => (
         <thead className="text-left text-sm text-gray-300 bg-[#223030]">
           <tr>
             {columns.map((col) => (
-              <th key={col} className="px-4 py-2">
+              <th key={col} className="px-4 py-2" width="25%">
                 {col}
               </th>
             ))}
