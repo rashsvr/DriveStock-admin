@@ -115,7 +115,7 @@ const CourierDeliveries = () => {
               orders.map((order) => (
                 <tr key={order._id}>
                   <td>{order._id}</td>
-                  <td>{order.status}</td>
+                  <td>{order.item.courierStatus}</td>
                   <td>{order.buyerId?.name || order.buyerId?._id || 'N/A'}</td>
                   <td>
                     {order.shippingAddress
@@ -125,18 +125,22 @@ const CourierDeliveries = () => {
                   <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td>
                     <select
-                      value={order.status}
+                      value={order.item.courierStatus}
                       onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
                       className="select select-sm select-bordered text-black mr-2"
-                      disabled={order.status === 'delivered' || order.status === 'issueReported'}
+                      disabled={order.item.courierStatus === 'Delivered'}
                     >
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Picked Up">Picked Up</option>
+                      <option value="In Transit">In Transit</option>
+                      <option value="Out for Delivery">Out for Delivery</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Failed Delivery">Failed Delivery</option>
                     </select>
                     <button
                       className="btn btn-sm btn-warning"
                       onClick={() => openReportModal(order._id)}
-                      disabled={order.status === 'delivered' || order.status === 'issueReported'}
+                      disabled={order.item.courierStatus === 'Delivered'}
                     >
                       Report Issue
                     </button>
