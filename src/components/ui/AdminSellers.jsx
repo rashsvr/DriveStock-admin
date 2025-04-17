@@ -13,7 +13,7 @@ const AdminSellers = () => {
   });
   const [pendingSellersPagination, setPendingSellersPagination] = useState({
     page: 1,
-    limit: 5,
+    limit: 10,
     total: 0,
   });
   const [alert, setAlert] = useState(null);

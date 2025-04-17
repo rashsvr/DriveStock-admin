@@ -7,7 +7,7 @@ const AdminCouriers = () => {
   const [couriers, setCouriers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5, // Set a reasonable default for pagination
+    limit: 10, // Set a reasonable default for pagination
     total: 0,
   });
   const [formData, setFormData] = useState({ email: '', password: '', name: '', phone: '', region: '' });

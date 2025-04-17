@@ -6,7 +6,7 @@ const AdminBuyers = () => {
   const [buyers, setBuyers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5, // Matches the original itemsPerPage prop in the Table component
+    limit: 10, // Matches the original itemsPerPage prop in the Table component
     total: 0,
   });
   const [alert, setAlert] = useState(null);

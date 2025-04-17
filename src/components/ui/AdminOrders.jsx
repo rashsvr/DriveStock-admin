@@ -7,7 +7,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 5, // Set a reasonable default for pagination
+    limit: 10, // Set a reasonable default for pagination
     total: 0,
   });
   const [filters, setFilters] = useState({
