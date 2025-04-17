@@ -5,6 +5,11 @@ import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminCouriers = () => {
   const [couriers, setCouriers] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5, // Set a reasonable default for pagination
+    total: 0,
+  });
   const [formData, setFormData] = useState({ email: '', password: '', name: '', phone: '', region: '' });
   const [editId, setEditId] = useState(null);
   const [alert, setAlert] = useState(null);
@@ -13,16 +18,32 @@ const AdminCouriers = () => {
 
   useEffect(() => {
     fetchCouriers();
-  }, []);
+  }, [pagination.page]); // Fetch couriers when the page changes
 
   const fetchCouriers = async () => {
     setLoading(true);
     try {
-      const response = await adminApi.getAllCouriers();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      const response = await adminApi.getAllCouriers(params); // Updated to pass pagination params
+      if (!response.success || !Array.isArray(response.data)) {
+        throw new Error("Invalid couriers data received.");
+      }
       console.log('Couriers:', response.data); // Debug log
       setCouriers(response.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total, // Update total based on API response
+      }));
     } catch (error) {
-      setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      setAlert({ 
+        type: 'error', 
+        message: error.message || "Failed to fetch couriers.",
+        onClose: () => setAlert(null) 
+      });
+      setCouriers([]);
     } finally {
       setLoading(false);
     }
@@ -56,6 +77,7 @@ const AdminCouriers = () => {
         await adminApi.createCourier(formData);
         setAlert({ type: 'success', message: 'Courier created successfully', onClose: () => setAlert(null) });
       }
+      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after create/update
       await fetchCouriers();
       setModalOpen(false);
       resetForm();
@@ -85,12 +107,18 @@ const AdminCouriers = () => {
     try {
       await adminApi.deleteCourier(id);
       setAlert({ type: 'success', message: 'Courier deleted successfully', onClose: () => setAlert(null) });
+      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after deletion
       await fetchCouriers();
     } catch (error) {
       setAlert({ type: 'error', message: error.message || 'Delete failed', onClose: () => setAlert(null) });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const resetForm = () => {
@@ -245,6 +273,29 @@ const AdminCouriers = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {pagination.total > 0 && (
+        <div className="flex justify-center mt-4 space-x-2">
+          <button
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={pagination.page === 1}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Previous
+          </button>
+          <span className="self-center text-white">
+            Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+          </span>
+          <button
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

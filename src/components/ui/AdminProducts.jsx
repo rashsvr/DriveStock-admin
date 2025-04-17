@@ -6,6 +6,11 @@ import LoadingAnimation from '../function/LoadingAnimation';
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5, // Set a reasonable default for pagination
+    total: 0,
+  });
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -17,7 +22,7 @@ const AdminProducts = () => {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, []);
+  }, [pagination.page]); // Fetch products when the page changes
 
   const fetchCategories = async () => {
     try {
@@ -37,7 +42,10 @@ const AdminProducts = () => {
     setLoading(true);
     try {
       // Clean filters: only include non-empty values
-      const params = {};
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
       if (filters.status) params.status = filters.status;
       if (filters.category) params.category = filters.category;
       if (filters.sellerId) params.sellerId = filters.sellerId;
@@ -50,6 +58,10 @@ const AdminProducts = () => {
       }
       console.log('Products response:', response.data); // Debug log
       setProducts(response.data);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total, // Update total based on API response
+      }));
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
@@ -77,21 +89,30 @@ const AdminProducts = () => {
 
   const applyFilters = async (e) => {
     e.preventDefault();
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 when applying filters
     await fetchProducts();
   };
 
   const resetFilters = async () => {
     setFilters({ status: '', category: '', sellerId: '' });
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 when resetting filters
     setLoading(true);
     try {
       console.log('Resetting filters, fetching all products'); // Debug log
-      const response = await adminApi.getAllProducts({});
+      const response = await adminApi.getAllProducts({ 
+        page: 1, 
+        limit: pagination.limit 
+      });
       if (!response.success || !Array.isArray(response.data)) {
         console.error('Invalid reset products response:', response); // Debug log
         throw new Error('Received invalid product data from server.');
       }
       console.log('Reset products response:', response.data); // Debug log
       setProducts(response.data);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total,
+      }));
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
@@ -110,6 +131,11 @@ const AdminProducts = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   if (loading) return <LoadingAnimation />;
@@ -219,6 +245,29 @@ const AdminProducts = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {pagination.total > 0 && (
+        <div className="flex justify-center mt-4 space-x-2">
+          <button
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={pagination.page === 1}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Previous
+          </button>
+          <span className="self-center text-white">
+            Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+          </span>
+          <button
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

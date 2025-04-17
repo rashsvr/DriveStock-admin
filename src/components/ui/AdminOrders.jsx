@@ -5,6 +5,11 @@ import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 5, // Set a reasonable default for pagination
+    total: 0,
+  });
   const [filters, setFilters] = useState({
     status: '',
     district: '',
@@ -17,12 +22,15 @@ const AdminOrders = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [pagination.page]); // Fetch orders when the page changes
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
       if (filters.status) params.status = filters.status;
       if (filters.district) params.district = filters.district;
       if (filters.startDate) params.startDate = filters.startDate;
@@ -31,7 +39,14 @@ const AdminOrders = () => {
       console.log('Fetching orders with params:', params);
       const response = await adminApi.getAllOrders(params);
       console.log('Orders response:', response.data);
+      if (!response.success || !Array.isArray(response.data)) {
+        throw new Error("Invalid orders data received.");
+      }
       setOrders(response.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total, // Update total based on API response
+      }));
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
@@ -58,17 +73,29 @@ const AdminOrders = () => {
 
   const applyFilters = async (e) => {
     e.preventDefault();
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 when applying filters
     await fetchOrders();
   };
 
   const resetFilters = async () => {
     setFilters({ status: '', district: '', startDate: '', endDate: '' });
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 when resetting filters
     setLoading(true);
     try {
       console.log('Resetting filters, fetching all orders');
-      const response = await adminApi.getAllOrders({});
+      const response = await adminApi.getAllOrders({ 
+        page: 1, 
+        limit: pagination.limit 
+      });
       console.log('Reset orders response:', response.data);
+      if (!response.success || !Array.isArray(response.data)) {
+        throw new Error("Invalid orders data received.");
+      }
       setOrders(response.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total,
+      }));
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
@@ -86,6 +113,11 @@ const AdminOrders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const toggleRow = (orderId) => {
@@ -279,6 +311,29 @@ const AdminOrders = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {pagination.total > 0 && (
+        <div className="flex justify-center mt-4 space-x-2">
+          <button
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={pagination.page === 1}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Previous
+          </button>
+          <span className="self-center text-white">
+            Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+          </span>
+          <button
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -7,6 +7,11 @@ import LoadingAnimation from '../function/LoadingAnimation';
 
 const AdminAdmins = () => {
   const [admins, setAdmins] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10, // Match the itemsPerPage prop passed to Table
+    total: 0,
+  });
   const [formData, setFormData] = useState({ email: '', password: '', name: '', phone: '' });
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -15,15 +20,27 @@ const AdminAdmins = () => {
 
   useEffect(() => {
     fetchAdmins();
-  }, []);
+  }, [pagination.page]); // Fetch admins when the page changes
 
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const res = await adminApi.getAllAdmins();
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      const res = await adminApi.getAllAdmins(params); // Updated to pass pagination params
+      if (!res.success || !Array.isArray(res.data)) {
+        throw new Error("Invalid admins data received.");
+      }
       setAdmins(res.data);
+      setPagination((prev) => ({
+        ...prev,
+        total: res.pagination.total, // Update total based on API response
+      }));
     } catch (error) {
       setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
+      setAdmins([]);
     } finally {
       setLoading(false);
     }
@@ -45,6 +62,7 @@ const AdminAdmins = () => {
     try {
       await adminApi.createAdmin(formData);
       setAlert({ type: 'success', message: 'Admin created successfully', onClose: () => setAlert(null) });
+      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after creating a new admin
       await fetchAdmins(); // Immediate refetch for latest data
       setModalOpen(false);
     } catch (error) {
@@ -64,6 +82,7 @@ const AdminAdmins = () => {
     try {
       await adminApi.deleteAdmin(confirmModal.adminId);
       setAlert({ type: 'success', message: 'Admin deleted successfully', onClose: () => setAlert(null) });
+      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after deletion
       await fetchAdmins(); // Immediate refetch for latest data
     } catch (error) {
       setAlert({ type: 'error', message: error.message, onClose: () => setAlert(null) });
@@ -71,6 +90,11 @@ const AdminAdmins = () => {
       setLoading(false);
       setConfirmModal({ isOpen: false, adminId: null });
     }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const columns = [
@@ -185,8 +209,31 @@ const AdminAdmins = () => {
             actions={actions}
             loading={loading}
             emptyMessage="No admins found."
-            itemsPerPage={5}
+            itemsPerPage={pagination.limit} // Use pagination.limit to stay consistent
           />
+
+          {/* Pagination Controls */}
+          {pagination.total > 0 && (
+            <div className="flex justify-center mt-4 space-x-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white"
+              >
+                Previous
+              </button>
+              <span className="self-center text-white">
+                Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+              </span>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       )}
     </PageContainer>
