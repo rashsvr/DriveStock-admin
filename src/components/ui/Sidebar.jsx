@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -16,47 +17,115 @@ const Sidebar = () => {
       { path: '/dashboard/categories', label: 'Manage Categories' },
       { path: '/dashboard/orders', label: 'Manage Orders' },
       { path: '/dashboard/products', label: 'Manage Products' },
-      { path: '/dashboard/profile', label: 'My Profile' },
     ],
     seller: [
       { path: '/dashboard/analytics', label: 'Analytics' },
       { path: '/dashboard/seller-products', label: 'My Products' },
       { path: '/dashboard/seller-orders', label: 'My Orders' },
-      { path: '/dashboard/profile', label: 'My Profile' },
     ],
     courier: [
       { path: '/dashboard/analytics', label: 'Analytics' },
       { path: '/dashboard/deliveries', label: 'My Deliveries' },
-      { path: '/dashboard/profile', label: 'My Profile' },
     ],
   };
 
   if (!user || user.role === 'buyer') return null;
 
   return (
-    <div className="drawer-side">
+    <motion.div
+      initial={{ x: -256 }}
+      animate={{ x: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="drawer-side z-40"
+    >
       <label htmlFor="sidebar" className="drawer-overlay"></label>
-      <ul className="menu p-4 w-64 bg-base-100 h-full text-base-content">
-        <li className="mb-4">
-          <h2 className="text-xl font-bold">Dashboard</h2>
-        </li>
-        {navItems[user.role]?.map((item) => (
-          <li key={item.path}>
+      <div className="w-64 h-full bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-xl flex flex-col">
+        {/* Header with User Profile as Navigation Item */}
+        <div className="p-4 border-b border-gray-700">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-3"
+          >
+            <h1 className="text-xl font-bold text-teal-500">DriveStock</h1>
             <NavLink
-              to={item.path}
-              className={({ isActive }) => (isActive ? 'bg-primary text-white' : '')}
+              to="/dashboard/profile"
+              className={({ isActive }) =>
+                `flex items-center p-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                }`
+              }
             >
-              {item.label}
+              <motion.div
+                whileHover={{ x: 5 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+                className="flex items-center space-x-3"
+              >
+                <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center">
+                  <User size={20} />
+                </div>
+                <div>
+                  <span className="text-sm font-medium">{user?.name || 'User'}</span>
+                  <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
+                </div>
+              </motion.div>
             </NavLink>
+          </motion.div>
+        </div>
+
+        {/* Navigation Items */}
+        <ul className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <li className="mb-4">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Dashboard</h2>
           </li>
-        ))}
-        <li className="mt-auto">
-          <button onClick={logout} className="flex items-center">
-            <LogOut className="mr-2" size={20} /> Logout
-          </button>
-        </li>
-      </ul>
-    </div>
+          <AnimatePresence>
+            {navItems[user.role]?.map((item) => (
+              <motion.li
+                key={item.path}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center p-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-teal-500 text-white shadow-md'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`
+                  }
+                >
+                  <motion.span
+                    whileHover={{ x: 5 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    {item.label}
+                  </motion.span>
+                </NavLink>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t border-gray-700">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={logout}
+            className="w-full flex items-center justify-center space-x-2 p-2 bg-red-500 hover:bg-red-600 rounded-lg text-white transition-colors duration-200"
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
