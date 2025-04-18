@@ -19,6 +19,7 @@ const SellerOrders = () => {
   const [loading, setLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+  const [updateProductId, setUpdateProductId] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null); // Track the expanded row
 
   useEffect(() => {
@@ -115,17 +116,18 @@ const SellerOrders = () => {
     }
   };
 
-  const handleStatusChange = (orderId, status) => {
+  const handleStatusChange = (orderId, status, productId) => {
     setUpdatingOrderId(orderId);
     setNewStatus(status);
+    setUpdateProductId(productId);
   };
 
   const updateStatus = async (orderId) => {
     if (!newStatus) return;
     setLoading(true);
     try {
-      console.log("Updating order status:", { orderId, status: newStatus });
-      await sellerApi.updateOrderStatus(orderId, { status: newStatus });
+      console.log("Updating order status:", { orderId, status: newStatus, productId: updateProductId });
+      await sellerApi.updateOrderStatus(orderId, { status: newStatus, productId: updateProductId });
       setAlert({
         type: "success",
         message: "Order status updated successfully.",
@@ -151,25 +153,59 @@ const SellerOrders = () => {
       setLoading(false);
       setUpdatingOrderId(null);
       setNewStatus("");
+      setUpdateProductId(null);
     }
   };
 
-  const cancelOrder = async (orderId) => {
+  const cancelOrder = async (orderId, productId) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
     setLoading(true);
     try {
-      console.log("Cancelling order:", orderId);
-      await sellerApi.cancelOrder(orderId);
+      console.log("Cancelling order:", { orderId, productId, status: "Cancelled" });
+      await sellerApi.updateOrderStatus(orderId, { status: "Cancelled", productId });
       setAlert({
         type: "success",
         message: "Order cancelled successfully.",
         onClose: () => setAlert(null),
       });
+      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after cancellation
       await fetchOrders();
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
-        400: "Invalid request.",
+        400: "Invalid request or order cannot be cancelled.",
+        401: "Unauthorized: Please log in.",
+        403: "Forbidden: Seller access required.",
+        404: "Order not found.",
+        500: "Server error. Please try again later.",
+      };
+      setAlert({
+        type: "error",
+        message: messages[status] || error.message || "Failed to cancel order.",
+        onClose: () => setAlert(null),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const orderHandover = async (orderId, productId) => {
+    if (!window.confirm("Are you sure you want to handover this order?")) return;
+    setLoading(true);
+    try {
+      console.log("Handover order:", { orderId, productId});
+      await sellerApi.orderHandover(orderId, { productId });
+      setAlert({
+        type: "success",
+        message: "Order Pending for Delivery.",
+        onClose: () => setAlert(null),
+      });
+      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after cancellation
+      await fetchOrders();
+    } catch (error) {
+      const status = error.code || error.response?.status;
+      const messages = {
+        400: "Invalid request or order cannot be cancelled.",
         401: "Unauthorized: Please log in.",
         403: "Forbidden: Seller access required.",
         404: "Order not found.",
@@ -321,6 +357,7 @@ const SellerOrders = () => {
                             onClick={() => {
                               setUpdatingOrderId(null);
                               setNewStatus("");
+                              setUpdateProductId(null);
                             }}
                             className="btn btn-sm bg-orange-500 border-none hover:bg-orange-600 text-white"
                           >
@@ -331,7 +368,7 @@ const SellerOrders = () => {
                         <>
                           <button
                             onClick={() =>
-                              handleStatusChange(order._id, order.status)
+                              handleStatusChange(order._id, order.item.sellerStatus, order.item.productId._id)
                             }
                             className="btn btn-sm bg-blue-500 border-none hover:bg-blue-600 text-white"
                           >
@@ -339,12 +376,22 @@ const SellerOrders = () => {
                           </button>
                           {order.item.sellerStatus !== "Cancelled" &&
                             order.item.sellerStatus !== "Delivered" && (
-                              <button
-                                onClick={() => cancelOrder(order._id)}
-                                className="btn btn-sm bg-red-600 border-none hover:bg-red-700 text-white"
-                              >
-                                Cancel Order
-                              </button>
+                              <>
+                                <button
+                                  onClick={() =>
+                                    orderHandover(order._id, order.item.productId._id)
+                                  }
+                                  className="btn btn-sm bg-green-500 border-none hover:bg-green-600 text-white"
+                                >
+                                  Ready to Ship
+                                </button>
+                                <button
+                                  onClick={() => cancelOrder(order._id, order.item.productId._id)}
+                                  className="btn btn-sm bg-red-600 border-none hover:bg-red-700 text-white"
+                                >
+                                  Cancel Order
+                                </button>
+                              </>
                             )}
                         </>
                       )}

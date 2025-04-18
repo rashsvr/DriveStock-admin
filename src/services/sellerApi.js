@@ -138,9 +138,15 @@ export const getOrderById = async (orderId) => {
   return response.data;
 };
 
-export const updateOrderStatus = async (orderId, { status }) => {
+export const updateOrderStatus = async (orderId, { status, productId }) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to update order status', code: 401, isBigError: false };
-  const response = await apiClient.put(`/seller/order/${orderId}/status`, { status });
+  const response = await apiClient.put(`/seller/order/${orderId}/status`, { status, productId });
+  return response.data;
+};
+
+export const orderHandover = async (orderId, { productId }) => {
+  if (!isAuthenticated()) throw { message: 'User must be logged in to update order status', code: 401, isBigError: false };
+  const response = await apiClient.put(`/seller/order/${orderId}/handover`, { productId });
   return response.data;
 };
 
@@ -174,7 +180,8 @@ export default {
   deleteProduct: (productId) => apiRequest(() => deleteProduct(productId)),
   getSellerOrders: (params) => apiRequest(() => getSellerOrders(params)),
   getOrderById: (orderId) => apiRequest(() => getOrderById(orderId)),
-  updateOrderStatus: (orderId, statusData) => apiRequest(() => updateOrderStatus(orderId, statusData)),
+  updateOrderStatus: (orderId, statusData, productId) => apiRequest(() => updateOrderStatus(orderId, statusData, productId)),
+  orderHandover: (orderId, productId) => apiRequest(() => orderHandover(orderId, productId)),
   cancelOrder: (orderId) => apiRequest(() => cancelOrder(orderId)),
   getAnalytics: () => apiRequest(() => getAnalytics()),
   getAllCategories: () => apiRequest(() => getAllCategories()),
