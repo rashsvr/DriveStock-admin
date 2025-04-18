@@ -193,19 +193,19 @@ const SellerOrders = () => {
     if (!window.confirm("Are you sure you want to handover this order?")) return;
     setLoading(true);
     try {
-      console.log("Handover order:", { orderId, productId});
+      console.log("Handover order:", { orderId, productId });
       await sellerApi.orderHandover(orderId, { productId });
       setAlert({
         type: "success",
         message: "Order Pending for Delivery.",
         onClose: () => setAlert(null),
       });
-      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after cancellation
+      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after handover
       await fetchOrders();
     } catch (error) {
       const status = error.code || error.response?.status;
       const messages = {
-        400: "Invalid request or order cannot be cancelled.",
+        400: "Invalid request or order cannot be handed over.",
         401: "Unauthorized: Please log in.",
         403: "Forbidden: Seller access required.",
         404: "Order not found.",
@@ -213,7 +213,7 @@ const SellerOrders = () => {
       };
       setAlert({
         type: "error",
-        message: messages[status] || error.message || "Failed to cancel order.",
+        message: messages[status] || error.message || "Failed to handover order.",
         onClose: () => setAlert(null),
       });
     } finally {
@@ -224,7 +224,7 @@ const SellerOrders = () => {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit))
       return;
-    setPagination({ ...pagination, page: newPage });
+    setPagination({ ...pagination, page: Newpage });
   };
 
   const toggleRow = (orderId) => {
@@ -375,7 +375,8 @@ const SellerOrders = () => {
                             Edit Status
                           </button>
                           {order.item.sellerStatus !== "Cancelled" &&
-                            order.item.sellerStatus !== "Delivered" && (
+                            order.item.sellerStatus !== "Delivered" &&
+                            order.item.sellerStatus !== "Shipped" && (
                               <>
                                 <button
                                   onClick={() =>
