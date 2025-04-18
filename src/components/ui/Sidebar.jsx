@@ -16,6 +16,7 @@ const Sidebar = () => {
       { path: '/dashboard/buyers', label: 'Manage Buyers' },
       { path: '/dashboard/categories', label: 'Manage Categories' },
       { path: '/dashboard/orders', label: 'Manage Orders' },
+      { path: '/dashboard/complaints', label: 'Manage Complaints' }, // New item
       { path: '/dashboard/products', label: 'Manage Products' },
     ],
     seller: [
