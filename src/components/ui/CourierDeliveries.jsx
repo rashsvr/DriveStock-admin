@@ -146,7 +146,6 @@ const CourierDeliveries = () => {
                         <option value="In Transit">In Transit</option>
                         <option value="Out for Delivery">Out for Delivery</option>
                         <option value="Delivered">Delivered</option>
-                        <option value="Failed Delivery">Failed Delivery</option>
                       </select>
                       <button
                         className="btn btn-sm btn-warning"
