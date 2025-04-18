@@ -20,7 +20,11 @@ const SellerOrders = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [newStatus, setNewStatus] = useState("");
   const [updateProductId, setUpdateProductId] = useState(null);
-  const [expandedRow, setExpandedRow] = useState(null); // Track the expanded row
+  const [expandedRow, setExpandedRow] = useState(null);
+  // New state for complaint resolution
+  const [resolvingComplaintId, setResolvingComplaintId] = useState(null);
+  const [complaintResolution, setComplaintResolution] = useState("");
+  const [complaintProductId, setComplaintProductId] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -145,8 +149,7 @@ const SellerOrders = () => {
       };
       setAlert({
         type: "error",
-        message:
-          messages[status] || error.message || "Failed to update order status.",
+        message: messages[status] || error.message || "Failed to update order status.",
         onClose: () => setAlert(null),
       });
     } finally {
@@ -168,7 +171,7 @@ const SellerOrders = () => {
         message: "Order cancelled successfully.",
         onClose: () => setAlert(null),
       });
-      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after cancellation
+      setPagination({ ...pagination, page: 1 });
       await fetchOrders();
     } catch (error) {
       const status = error.code || error.response?.status;
@@ -200,7 +203,7 @@ const SellerOrders = () => {
         message: "Order Pending for Delivery.",
         onClose: () => setAlert(null),
       });
-      setPagination({ ...pagination, page: 1 }); // Reset to page 1 after handover
+      setPagination({ ...pagination, page: 1 });
       await fetchOrders();
     } catch (error) {
       const status = error.code || error.response?.status;
@@ -221,10 +224,52 @@ const SellerOrders = () => {
     }
   };
 
+  // New function to handle complaint resolution
+  const handleComplaintResolution = (orderId, productId, currentStatus) => {
+    setResolvingComplaintId(orderId);
+    setComplaintProductId(productId);
+    setComplaintResolution(currentStatus || "");
+  };
+
+  // New function to submit complaint resolution
+  const resolveComplaint = async (orderId) => {
+    if (!complaintResolution) return;
+    setLoading(true);
+    try {
+      console.log("Resolving complaint:", { orderId, productId: complaintProductId, resolution: complaintResolution });
+      await sellerApi.resolveComplaint(orderId, { productId: complaintProductId, resolution: complaintResolution });
+      setAlert({
+        type: "success",
+        message: "Complaint resolved successfully.",
+        onClose: () => setAlert(null),
+      });
+      await fetchOrders();
+    } catch (error) {
+      const status = error.code || error.response?.status;
+      const messages = {
+        400: "Invalid resolution status or no open complaint.",
+        401: "Unauthorized: Please log in.",
+        403: "Forbidden: Seller access required.",
+        404: "Order or item not found.",
+        500: "Server error. Please try again later.",
+      };
+      setAlert({
+        type: "error",
+        message: messages[status] || error.message || "Failed to resolve complaint.",
+        onClose: () => setAlert(null),
+      });
+    } finally {
+      setLoading(false);
+      setResolvingComplaintId(null);
+      setComplaintResolution("");
+      setComplaintProductId(null);
+    }
+  };
+
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit))
       return;
-    setPagination({ ...pagination, page: Newpage });
+    setPagination({ ...pagination, page: newPage }); // Fixed typo: Newpage -> newPage
   };
 
   const toggleRow = (orderId) => {
@@ -277,7 +322,7 @@ const SellerOrders = () => {
           <div>
             <label className="label text-sm text-white">End Date</label>
             <input
-              type="date"
+óg            type="date"
               name="endDate"
               value={filters.endDate}
               onChange={handleFilterChange}
@@ -364,6 +409,40 @@ const SellerOrders = () => {
                             Cancel
                           </button>
                         </>
+                      ) : resolvingComplaintId === order._id ? (
+                        <>
+                          <select
+                            value={complaintResolution}
+                            onChange={(e) => setComplaintResolution(e.target.value)}
+                            className="select select-bordered select-sm text-black"
+                          >
+                            <option value="">Select Resolution</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                            {order.item.complaint?.refundRequested && (
+                              <>
+                                <option value="Refund Approved">Refund Approved</option>
+                                <option value="Refund Rejected">Refund Rejected</option>
+                              </>
+                            )}
+                          </select>
+                          <button
+                            onClick={() => resolveComplaint(order._id)}
+                            className="btn btn-sm bg-teal-500 border-none hover:bg-teal-600 text-white"
+                          >
+                            Submit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setResolvingComplaintId(null);
+                              setComplaintResolution("");
+                              setComplaintProductId(null);
+                            }}
+                            className="btn btn-sm bg-orange-500 border-none hover:bg-orange-600 text-white"
+                          >
+                            Cancel
+                          </button>
+                        </>
                       ) : (
                         <>
                           <button
@@ -374,6 +453,16 @@ const SellerOrders = () => {
                           >
                             Edit Status
                           </button>
+                          {order.item.complaint?.status === "Open" && order.item.sellerStatus === "Delivered" && (
+                            <button
+                              onClick={() =>
+                                handleComplaintResolution(order._id, order.item.productId._id, "")
+                              }
+                              className="btn btn-sm bg-purple-500 border-none hover:bg-purple-600 text-white"
+                            >
+                              Resolve Complaint
+                            </button>
+                          )}
                           {order.item.sellerStatus !== "Cancelled" &&
                             order.item.sellerStatus !== "Delivered" &&
                             order.item.sellerStatus !== "Shipped" && (
@@ -448,6 +537,21 @@ const SellerOrders = () => {
                             )}
                             <p><strong>Courier Status:</strong> {order.item.courierStatus || 'N/A'}</p>
                           </div>
+
+                          {/* Complaint Details */}
+                          {order.item.complaint && (
+                            <div className="col-span-1 md:col-span-2">
+                              <h3 className="text-lg font-semibold text-blue-400">Complaint Details</h3>
+                              <p><strong>Description:</strong> {order.item.complaint.description || 'N/A'}</p>
+                              <p><strong>Status:</strong> {order.item.complaint.status}</p>
+                              <p><strong>Refund Requested:</strong> {order.item.complaint.refundRequested ? 'Yes' : 'No'}</p>
+                              {order.item.complaint.refundRequested && (
+                                <p><strong>Refund Amount:</strong> ${order.item.complaint.refundAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                              )}
+                              <p><strong>Created At:</strong> {order.item.complaint.createdAt ? new Date(order.item.complaint.createdAt).toLocaleString() : 'N/A'}</p>
+                              <p><strong>Resolved At:</strong> {order.item.complaint.resolvedAt ? new Date(order.item.complaint.resolvedAt).toLocaleString() : 'N/A'}</p>
+                            </div>
+                          )}
 
                           {/* Status History */}
                           <div className="col-span-1 md:col-span-2">
