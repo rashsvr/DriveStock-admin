@@ -14,11 +14,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('AdminToken');
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem('AdminToken');
       localStorage.removeItem('user');
       setUser(null);
     }
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const handleAuthError = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('AdminToken');
     localStorage.removeItem('user');
     setUser(null);
     queryClient.clear();
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   const loginMutation = useMutation({
     mutationFn: sharedApi.login,
     onSuccess: (data) => {
-      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('AdminToken', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data));
       setUser(data.data);
       queryClient.invalidateQueries();
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   const registerMutation = useMutation({
     mutationFn: sharedApi.register,
     onSuccess: (data) => {
-      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('AdminToken', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data));
       setUser(data.data);
       queryClient.invalidateQueries();

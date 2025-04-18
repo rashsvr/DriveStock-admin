@@ -1,7 +1,7 @@
 import apiClient, { isAuthenticated, apiRequest } from './apiClient';
 
 export const logout = () => {
-  localStorage.removeItem('token');
+  localStorage.removeItem('AdminToken');
   localStorage.removeItem('user');
   window.location.href = '/login';
 };
@@ -39,7 +39,7 @@ export const updateProfile = async (profileData) => {
 export const deleteProfile = async () => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to delete profile', code: 401, isBigError: false };
   const response = await apiClient.delete('/profile');
-  localStorage.removeItem('token');
+  localStorage.removeItem('AdminToken');
   localStorage.removeItem('user');
   return response.data;
 };

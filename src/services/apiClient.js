@@ -17,7 +17,7 @@ axiosRetry(apiClient, {
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('AdminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -52,7 +52,7 @@ apiClient.interceptors.response.use(
     } else if (status === 401) {
       message = error.response?.data?.message || 'Session expired. Please log in again.';
       code = 401;
-      localStorage.removeItem('token');
+      localStorage.removeItem('AdminToken');
       localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
@@ -72,7 +72,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const isAuthenticated = () => !!localStorage.getItem('token');
+export const isAuthenticated = () => !!localStorage.getItem('AdminToken');
 
 export const apiRequest = async (requestFn) => {
   try {

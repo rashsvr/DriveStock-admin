@@ -51,7 +51,7 @@ const UserProfile = () => {
       const uploadResponse = await fetch('http://localhost:3000/api/media/upload', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('AdminToken')}`,
         },
         body: formDataImage,
       });
