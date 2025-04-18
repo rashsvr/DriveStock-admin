@@ -173,6 +173,12 @@ export const getAllCategories = async () => {
   return response.data;
 };
 
+export const resolveComplaint = async (orderId, data) => {
+  const response = await apiClient.post(`/seller/order/${orderId}/complaint/resolve`, data);
+  return response.data;
+};
+
+
 export default {
   createProduct: (productData) => apiRequest(() => createProduct(productData)),
   getSellerProducts: (params) => apiRequest(() => getSellerProducts(params)),
@@ -185,4 +191,5 @@ export default {
   cancelOrder: (orderId) => apiRequest(() => cancelOrder(orderId)),
   getAnalytics: () => apiRequest(() => getAnalytics()),
   getAllCategories: () => apiRequest(() => getAllCategories()),
+  resolveComplaint: (orderId, data) => apiRequest(() => resolveComplaint(orderId, data)),
 };

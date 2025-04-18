@@ -314,6 +314,11 @@ export const getAnalytics = async () => {
  return response.data;
 };
 
+export const getAllComplaints = async (params) => {
+  const response = await apiClient.get("/admin/complaints", { params });
+  return response.data;
+};
+
 export default {
   getAllAdmins: () => apiRequest(() => getAllAdmins()),
   createAdmin: (adminData) => apiRequest(() => createAdmin(adminData)),
@@ -336,4 +341,5 @@ export default {
   getAllOrders: (params) => apiRequest(() => getAllOrders(params)),
   getAllProducts: (params) => apiRequest(() => getAllProducts(params)),
   getAnalytics: () => apiRequest(() => getAnalytics()),
+  getAllComplaints: (params) => apiRequest(() => getAllComplaints(params)),
 };

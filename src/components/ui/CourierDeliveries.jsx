@@ -11,6 +11,7 @@ const CourierDeliveries = () => {
   const [loading, setLoading] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [reportReason, setReportReason] = useState('');
   const [expandedRow, setExpandedRow] = useState(null); // Track the expanded row
 
@@ -32,10 +33,10 @@ const CourierDeliveries = () => {
     }
   };
 
-  const handleStatusUpdate = async (orderId, status, reason = '') => {
+  const handleStatusUpdate = async (orderId, productId, status, reason = '') => {
     setLoading(true);
     try {
-      await courierApi.updateOrderStatus(orderId, { status, reason });
+      await courierApi.updateOrderStatus(orderId, { status, productId, reason });
       setAlert({ type: 'success', message: 'Order status updated', onClose: () => setAlert(null) });
       fetchOrders();
     } catch (error) {
@@ -49,7 +50,7 @@ const CourierDeliveries = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await courierApi.reportDeliveryIssue(selectedOrderId, { reason: reportReason });
+      await courierApi.reportDeliveryIssue(selectedOrderId, { productId: selectedProductId, reason: reportReason });
       setAlert({ type: 'success', message: 'Issue reported successfully', onClose: () => setAlert(null) });
       setShowReportModal(false);
       setReportReason('');
@@ -62,8 +63,9 @@ const CourierDeliveries = () => {
     }
   };
 
-  const openReportModal = (orderId) => {
+  const openReportModal = (orderId, productId) => {
     setSelectedOrderId(orderId);
+    setSelectedProductId(productId);
     setShowReportModal(true);
   };
 
@@ -135,7 +137,7 @@ const CourierDeliveries = () => {
                     <td>
                       <select
                         value={order.item.courierStatus}
-                        onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                        onChange={(e) => handleStatusUpdate(order._id, order.item.productId._id, e.target.value)}
                         className="select select-sm select-bordered text-black mr-2"
                         disabled={order.item.courierStatus === 'Delivered'}
                       >
@@ -150,9 +152,9 @@ const CourierDeliveries = () => {
                         className="btn btn-sm btn-warning"
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent row expansion when clicking the button
-                          openReportModal(order._id);
+                          openReportModal(order._id, order.item.productId._id);
                         }}
-                        disabled={order.item.courierStatus === 'Delivered'}
+                        disabled={order.item.courierStatus !== 'Out for Delivery'}
                       >
                         Report Issue
                       </button>

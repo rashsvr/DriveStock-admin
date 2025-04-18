@@ -13,6 +13,7 @@ import AdminBuyers from './components/ui/AdminBuyers';
 import AdminCategories from './components/ui/AdminCategories';
 import AdminOrders from './components/ui/AdminOrders';
 import AdminProducts from './components/ui/AdminProducts';
+import AdminComplaints from './components/ui/AdminComplaints'; // New import
 import UserProfile from './components/ui/UserProfile';
 import AdminAnalytics from './components/ui/AdminAnalytics';
 import SellerProducts from './components/ui/SellerProducts';
@@ -164,6 +165,17 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
           id="admin-products"
+        />
+        <Route
+          path="/dashboard/complaints"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Dashboard>
+                <AdminComplaints />
+              </Dashboard>
+            </ProtectedRoute>
+          }
+          id="admin-complaints"
         />
         <Route
           path="/dashboard/profile"

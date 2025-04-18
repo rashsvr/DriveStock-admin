@@ -28,9 +28,9 @@ export const getOrderById = async (orderId) => {
  * @param {{ status: string, reason?: string }} statusData - Status and optional reason
  * @returns {Promise<{ success: boolean, message: string, trackingNumber?: string }>}
  */
-export const updateOrderStatus = async (orderId, { status, reason }) => {
+export const updateOrderStatus = async (orderId, { productId, status, reason }) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to update order status', code: 401, isBigError: false };
-  const response = await apiClient.put(`/courier/order/${orderId}/status`, { status, reason });
+  const response = await apiClient.put(`/courier/order/${orderId}/status`, { status, productId, reason });
   return response.data;
 };
 
@@ -40,9 +40,9 @@ export const updateOrderStatus = async (orderId, { status, reason }) => {
  * @param {{ reason: string }} issueData - Reason for the issue
  * @returns {Promise<{ success: boolean, message: string }>}
  */
-export const reportDeliveryIssue = async (orderId, { reason }) => {
+export const reportDeliveryIssue = async (orderId, { productId, reason }) => {
   if (!isAuthenticated()) throw { message: 'User must be logged in to report an issue', code: 401, isBigError: false };
-  const response = await apiClient.post(`/courier/order/${orderId}/report-issue`, { reason });
+  const response = await apiClient.post(`/courier/order/${orderId}/report-issue`, { productId, reason });
   return response.data;
 };
 
@@ -59,7 +59,7 @@ export const getAnalytics = async () => {
 export default {
   getAssignedOrders: (params) => apiRequest(() => getAssignedOrders(params)),
   getOrderById: (orderId) => apiRequest(() => getOrderById(orderId)),
-  updateOrderStatus: (orderId, statusData) => apiRequest(() => updateOrderStatus(orderId, statusData)),
-  reportDeliveryIssue: (orderId, issueData) => apiRequest(() => reportDeliveryIssue(orderId, issueData)),
+  updateOrderStatus: (orderId, productId, statusData) => apiRequest(() => updateOrderStatus(orderId, productId, statusData)),
+  reportDeliveryIssue: (orderId, productId, issueData) => apiRequest(() => reportDeliveryIssue(orderId, productId, issueData)),
   getAnalytics: () => apiRequest(() => getAnalytics()),
 };
