@@ -45,9 +45,9 @@ const Login = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A2526] px-4">
-      <div className="w-full max-w-md rounded-2xl shadow-2xl bg-[#121D1E] p-8 space-y-6">
-        <h2 className="text-3xl font-semibold text-center text-white">Welcome Back</h2>
+    <div className="min-h-screen flex items-center justify-center bg-[#1A2526] px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md rounded-2xl shadow-2xl bg-[#121D1E] p-6 sm:p-8 space-y-6">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center text-white">Welcome Back</h2>
         {alert && (
           <Alert
             type={alert.type}
@@ -63,7 +63,7 @@ const Login = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
@@ -74,13 +74,13 @@ const Login = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full btn bg-highlight-orange text-black hover:bg-teal-400 transition-colors"
+            className="w-full btn bg-orange-500 border-none hover:bg-orange-600 text-white transition-colors"
             disabled={loading}
           >
             {loading ? 'Logging in...' : 'Login'}
@@ -88,7 +88,7 @@ const Login = () => {
         </form>
         <p className="text-center text-sm text-gray-400">
           Don't have an account?{' '}
-          <a href="/register" className="text-highlight-blue hover:underline">
+          <a href="/register" className="text-blue-500 hover:underline">
             Register (Sellers Only)
           </a>
         </p>
