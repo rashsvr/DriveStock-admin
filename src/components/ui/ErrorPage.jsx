@@ -14,7 +14,7 @@ const ErrorPage = ({ message = 'An error occurred', code = 500, redirectUrl }) =
             </a>
           </p>
         ) : (
-          <Link to="/dashboard" className="btn btn-primary mt-4">
+          <Link to="/login" className="btn btn-primary mt-4">
             Back to Dashboard
           </Link>
         )}

@@ -34,7 +34,7 @@ const Register = () => {
       const { data } = await register({ ...formData, role: 'seller' });
       setAlert({ type: 'success', message: 'Registration successful!' });
       setTimeout(() => {
-        navigate('/dashboard/analytics');
+        navigate('/login');
       }, 1000);
     } catch (err) {
       setAlert({ type: 'error', message: err.message || 'Registration failed.' });

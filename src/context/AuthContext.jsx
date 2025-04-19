@@ -57,6 +57,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.data));
       setUser(data.data);
       queryClient.invalidateQueries();
+      localStorage.removeItem('AdminToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
     },
     onError: (error) => {
       if (error.code === 401) {
