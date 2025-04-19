@@ -141,7 +141,7 @@ const AdminProducts = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4 bg-[#1A2526] text-white">
+    <div className="p-4 bg-[#1A2526] text-white min-h-screen">
       <h2 className="text-2xl font-bold mb-4 text-blue-500">Manage Products</h2>
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
@@ -154,7 +154,7 @@ const AdminProducts = () => {
               name="status"
               value={filters.status}
               onChange={handleFilterChange}
-              className="select select-bordered w-full text-black"
+              className="select select-bordered w-full bg-gray-800 text-white focus:ring-teal-500 focus:border-teal-500"
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
@@ -167,7 +167,7 @@ const AdminProducts = () => {
               name="category"
               value={filters.category}
               onChange={handleFilterChange}
-              className="select select-bordered w-full text-black"
+              className="select select-bordered w-full bg-gray-800 text-white focus:ring-teal-500 focus:border-teal-500"
             >
               <option value="">All Categories</option>
               {categories
@@ -192,15 +192,15 @@ const AdminProducts = () => {
               value={filters.sellerId}
               onChange={handleFilterChange}
               placeholder="Enter Seller ID"
-              className="input input-bordered w-full text-black"
+              className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
             />
           </div>
         </div>
-        <div className="mt-4 flex space-x-2">
-          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 text-white">
+        <div className="mt-4 flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 text-white w-full sm:w-auto">
             Apply Filters
           </button>
-          <button type="button" onClick={resetFilters} className="btn bg-orange-500 border-none hover:bg-orange-600 text-white">
+          <button type="button" onClick={resetFilters} className="btn bg-orange-500 border-none hover:bg-orange-600 text-white w-full sm:w-auto">
             Reset
           </button>
         </div>
@@ -211,12 +211,12 @@ const AdminProducts = () => {
         <table className="table w-full bg-[#1A2526] text-white">
           <thead className="text-blue-500">
             <tr>
-              <th>ID</th>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Category</th>
-              <th>Seller ID</th>
-              <th>Price</th>
+              <th className="text-left">ID</th>
+              <th className="text-left">Title</th>
+              <th className="text-left">Status</th>
+              <th className="text-left">Category</th>
+              <th className="text-left">Seller ID</th>
+              <th className="text-left">Price</th>
             </tr>
           </thead>
           <tbody>
@@ -248,11 +248,11 @@ const AdminProducts = () => {
 
       {/* Pagination Controls */}
       {pagination.total > 0 && (
-        <div className="flex justify-center mt-4 space-x-2">
+        <div className="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
           <button
             onClick={() => handlePageChange(pagination.page - 1)}
             disabled={pagination.page === 1}
-            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white w-full sm:w-auto"
           >
             Previous
           </button>
@@ -262,7 +262,7 @@ const AdminProducts = () => {
           <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white w-full sm:w-auto"
           >
             Next
           </button>
