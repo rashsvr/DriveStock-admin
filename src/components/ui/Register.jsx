@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Alert from './Alert';
 import LoadingAnimation from '../function/LoadingAnimation';
@@ -46,9 +46,9 @@ const Register = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A2526] px-4">
-      <div className="w-full max-w-md rounded-2xl shadow-2xl bg-[#121D1E] p-8 space-y-6">
-        <h2 className="text-3xl font-semibold text-center text-white">
+    <div className="min-h-screen flex items-center justify-center bg-[#1A2526] px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md rounded-2xl shadow-2xl bg-[#121D1E] p-6 sm:p-8 space-y-6">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center text-white">
           Seller Registration
         </h2>
         {alert && (
@@ -68,7 +68,7 @@ const Register = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
@@ -81,7 +81,7 @@ const Register = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
@@ -94,7 +94,7 @@ const Register = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
@@ -107,20 +107,21 @@ const Register = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full input input-bordered bg-[#1F2D2E] text-white border-gray-600 focus:border-highlight-teal"
+              className="w-full input input-bordered bg-gray-800 text-white placeholder-gray-400 border-gray-600 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full btn bg-highlight-orange text-black hover:bg-teal-400 transition-colors"
+            className="w-full btn bg-orange-500 border-none hover:bg-orange-600 text-white transition-colors"
+            disabled={loading}
           >
-            Register
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
         <p className="text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <a href="/login" className="text-highlight-blue hover:underline">
+          <a href="/login" className="text-blue-500 hover:underline">
             Login
           </a>
         </p>
