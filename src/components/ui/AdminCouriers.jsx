@@ -117,7 +117,7 @@ const AdminCouriers = () => {
   };
 
   const handlePageChange = (newPage) => {
-    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
+    if (newPage < 1 || personallynewPage > Math.ceil(pagination.total / pagination.limit)) return;
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
@@ -129,7 +129,7 @@ const AdminCouriers = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4 text-white" style={{ backgroundColor: '#1A2526' }}>
+    <div className="p-4 text-white min-h-screen" style={{ backgroundColor: '#1A2526' }}>
       <h2 className="text-2xl font-bold mb-4 text-blue-500">Manage Couriers</h2>
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
@@ -138,7 +138,7 @@ const AdminCouriers = () => {
           resetForm();
           setModalOpen(true);
         }}
-        className="btn btn-primary mb-4 bg-orange-500 border-none hover:bg-orange-600"
+        className="btn btn-primary mb-4 bg-orange-500 border-none hover:bg-orange-600 w-full sm:w-auto"
       >
         Add Courier
       </button>
@@ -146,7 +146,7 @@ const AdminCouriers = () => {
       {/* Modal */}
       {modalOpen && (
         <dialog open className="modal">
-          <div className="modal-box bg-[#1A2526] text-white">
+          <div className="modal-box bg-[#1A2526] text-white w-full max-w-md p-4 sm:p-6">
             <h3 className="font-bold text-lg mb-4">{editId ? 'Edit Courier' : 'Create Courier'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -156,7 +156,7 @@ const AdminCouriers = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input input-bordered w-full text-black"
+                  className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -168,7 +168,7 @@ const AdminCouriers = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="input input-bordered w-full text-black"
+                    className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                     required
                   />
                 </div>
@@ -180,7 +180,7 @@ const AdminCouriers = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="input input-bordered w-full text-black"
+                  className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -191,7 +191,7 @@ const AdminCouriers = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input input-bordered w-full text-black"
+                  className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
@@ -202,17 +202,17 @@ const AdminCouriers = () => {
                   name="region"
                   value={formData.region}
                   onChange={handleChange}
-                  className="input input-bordered w-full text-black"
+                  className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                   required
                 />
               </div>
-              <div className="modal-action flex justify-between">
-                <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600">
+              <div className="modal-action flex flex-col sm:flex-row justify-between gap-2">
+                <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 w-full sm:w-auto">
                   {editId ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
-                  className="btn btn-ghost text-white"
+                  className="btn btn-ghost text-white w-full sm:w-auto"
                   onClick={() => {
                     setModalOpen(false);
                     resetForm();
@@ -230,12 +230,12 @@ const AdminCouriers = () => {
         <table className="table w-full table-zebra bg-[#1A2526] text-white">
           <thead className="text-blue-500">
             <tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Region</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th className="text-left">Email</th>
+              <th className="text-left">Name</th>
+              <th className="text-left">Phone</th>
+              <th className="text-left">Region</th>
+              <th className="text-left">Status</th>
+              <th className="text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -247,16 +247,16 @@ const AdminCouriers = () => {
                   <td>{courier.phone}</td>
                   <td>{courier.region}</td>
                   <td>{courier.status || 'N/A'}</td>
-                  <td>
+                  <td className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <button
                       onClick={() => handleEdit(courier)}
-                      className="btn btn-sm bg-blue-500 text-white mr-2 hover:bg-blue-600"
+                      className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600 w-full sm:w-auto"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(courier._id)}
-                      className="btn btn-sm btn-error text-white hover:bg-red-600"
+                      className="btn btn-sm btn-error text-white hover:bg-red-600 w-full sm:w-auto"
                     >
                       Delete
                     </button>
@@ -276,11 +276,11 @@ const AdminCouriers = () => {
 
       {/* Pagination Controls */}
       {pagination.total > 0 && (
-        <div className="flex justify-center mt-4 space-x-2">
+        <div className="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
           <button
             onClick={() => handlePageChange(pagination.page - 1)}
             disabled={pagination.page === 1}
-            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white w-full sm:w-auto"
           >
             Previous
           </button>
@@ -290,7 +290,7 @@ const AdminCouriers = () => {
           <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white"
+            className="btn bg-teal-500 border-none hover:bg-teal-600 text-white w-full sm:w-auto"
           >
             Next
           </button>
