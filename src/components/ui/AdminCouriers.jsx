@@ -7,7 +7,7 @@ const AdminCouriers = () => {
   const [couriers, setCouriers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10, // Set a reasonable default for pagination
+    limit: 10,
     total: 0,
   });
   const [formData, setFormData] = useState({ email: '', password: '', name: '', phone: '', region: '' });
@@ -16,9 +16,17 @@ const AdminCouriers = () => {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const regions = [
+    "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo",
+    "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara",
+    "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar",
+    "Matale", "Matara", "Monaragala", "Mullaitivu", "Nuwara Eliya",
+    "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
+  ];
+
   useEffect(() => {
     fetchCouriers();
-  }, [pagination.page]); // Fetch couriers when the page changes
+  }, [pagination.page]);
 
   const fetchCouriers = async () => {
     setLoading(true);
@@ -27,15 +35,15 @@ const AdminCouriers = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      const response = await adminApi.getAllCouriers(params); // Updated to pass pagination params
+      const response = await adminApi.getAllCouriers(params);
       if (!response.success || !Array.isArray(response.data)) {
         throw new Error("Invalid couriers data received.");
       }
-      console.log('Couriers:', response.data); // Debug log
+      console.log('Couriers:', response.data);
       setCouriers(response.data || []);
       setPagination((prev) => ({
         ...prev,
-        total: response.pagination.total, // Update total based on API response
+        total: response.pagination.total,
       }));
     } catch (error) {
       setAlert({ 
@@ -59,7 +67,6 @@ const AdminCouriers = () => {
     setLoading(true);
     setAlert(null);
 
-    // Validate form
     const { email, name, phone, region, password } = formData;
     if (!email || !name || !phone || !region || (!editId && !password)) {
       setAlert({ type: 'error', message: 'All fields are required', onClose: () => setAlert(null) });
@@ -69,7 +76,6 @@ const AdminCouriers = () => {
 
     try {
       if (editId) {
-        // Exclude password for updates
         const updateData = { email, name, phone, region };
         await adminApi.updateCourier(editId, updateData);
         setAlert({ type: 'success', message: 'Courier updated successfully', onClose: () => setAlert(null) });
@@ -77,7 +83,7 @@ const AdminCouriers = () => {
         await adminApi.createCourier(formData);
         setAlert({ type: 'success', message: 'Courier created successfully', onClose: () => setAlert(null) });
       }
-      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after create/update
+      setPagination((prev) => ({ ...prev, page: 1 }));
       await fetchCouriers();
       setModalOpen(false);
       resetForm();
@@ -92,7 +98,7 @@ const AdminCouriers = () => {
     setEditId(courier._id);
     setFormData({
       email: courier.email,
-      password: '', // Clear password for edit
+      password: '',
       name: courier.name,
       phone: courier.phone,
       region: courier.region,
@@ -107,7 +113,7 @@ const AdminCouriers = () => {
     try {
       await adminApi.deleteCourier(id);
       setAlert({ type: 'success', message: 'Courier deleted successfully', onClose: () => setAlert(null) });
-      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 after deletion
+      setPagination((prev) => ({ ...prev, page: 1 }));
       await fetchCouriers();
     } catch (error) {
       setAlert({ type: 'error', message: error.message || 'Delete failed', onClose: () => setAlert(null) });
@@ -117,7 +123,7 @@ const AdminCouriers = () => {
   };
 
   const handlePageChange = (newPage) => {
-    if (newPage < 1 || personallynewPage > Math.ceil(pagination.total / pagination.limit)) return;
+    if (newPage < 1 || newPage > Math.ceil(pagination.total / pagination.limit)) return;
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
@@ -143,7 +149,6 @@ const AdminCouriers = () => {
         Add Courier
       </button>
 
-      {/* Modal */}
       {modalOpen && (
         <dialog open className="modal">
           <div className="modal-box bg-[#1A2526] text-white w-full max-w-md p-4 sm:p-6">
@@ -197,14 +202,20 @@ const AdminCouriers = () => {
               </div>
               <div>
                 <label className="label text-white">Region</label>
-                <input
-                  type="text"
+                <select
                   name="region"
                   value={formData.region}
                   onChange={handleChange}
-                  className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
+                  className="select select-bordered w-full bg-gray-800 text-white focus:ring-teal-500 focus:border-teal-500"
                   required
-                />
+                >
+                  <option value="" disabled>Select a region</option>
+                  {regions.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="modal-action flex flex-col sm:flex-row justify-between gap-2">
                 <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 w-full sm:w-auto">
@@ -274,7 +285,6 @@ const AdminCouriers = () => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
       {pagination.total > 0 && (
         <div className="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
           <button
