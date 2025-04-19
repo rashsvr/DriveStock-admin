@@ -159,7 +159,7 @@ const AdminCategories = () => {
       const updatedCategories = await adminApi.getAllCategories();
       const updatedCategory = updatedCategories.data.find((cat) => cat._id === parentId);
       console.log('Updated subcategories:', updatedCategory?.categoryOption); // Debug log
-      setSubcategoryModal({
+      setSubcategoryModal | ({
         isOpen: true, // Keep modal open
         parentId,
         subcategories: updatedCategory?.categoryOption || [],
@@ -214,7 +214,7 @@ const AdminCategories = () => {
   if (loading) return <LoadingAnimation />;
 
   return (
-    <div className="p-4 bg-[#1A2526] text-white">
+    <div className="p-4 bg-[#1A2526] text-white min-h-screen">
       <h2 className="text-2xl font-bold mb-4 text-blue-500">Manage Categories</h2>
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
@@ -229,13 +229,13 @@ const AdminCategories = () => {
               value={formData.name}
               onChange={handleChange}
               placeholder="Category Name"
-              className="input input-bordered w-full text-black"
+              className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
               required
             />
           </div>
         </div>
-        <div className="mt-4 flex space-x-2">
-          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600">
+        <div className="mt-4 flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+          <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 w-full sm:w-auto">
             {editId ? 'Update Category' : 'Create Category'}
           </button>
           {editId && (
@@ -245,7 +245,7 @@ const AdminCategories = () => {
                 setEditId(null);
                 setFormData({ name: '' });
               }}
-              className="btn bg-orange-500 border-none hover:bg-orange-600 text-white"
+              className="btn bg-orange-500 border-none hover:bg-orange-600 text-white w-full sm:w-auto"
             >
               Cancel
             </button>
@@ -256,7 +256,7 @@ const AdminCategories = () => {
       {/* Subcategory Modal */}
       {subcategoryModal.isOpen && (
         <dialog open className="modal">
-          <div className="modal-box bg-[#1A2526] text-white max-w-lg p-6">
+          <div className="modal-box bg-[#1A2526] text-white w-full max-w-lg p-6">
             <h3 className="font-bold text-xl mb-4">
               Subcategories for{' '}
               {categories.find((cat) => cat._id === subcategoryModal.parentId)?.name || 'Category'}
@@ -272,13 +272,13 @@ const AdminCategories = () => {
                     value={subcategoryModal.newSubcategoryName}
                     onChange={handleSubcategoryNameChange}
                     placeholder="Subcategory Name"
-                    className="input input-bordered w-full text-black"
+                    className="input input-bordered w-full bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                     required
                   />
                 </div>
               </div>
               <div className="mt-4">
-                <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600">
+                <button type="submit" className="btn bg-teal-500 border-none hover:bg-teal-600 w-full sm:w-auto">
                   {subcategoryModal.editSubcategoryId ? 'Update' : 'Add'}
                 </button>
               </div>
@@ -290,9 +290,9 @@ const AdminCategories = () => {
                 <table className="table w-full bg-[#1A2526] text-white">
                   <thead className="text-gray-300">
                     <tr>
-                      <th>Name</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th className="text-left">Name</th>
+                      <th className="text-left">Status</th>
+                      <th className="text-left">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -302,16 +302,16 @@ const AdminCategories = () => {
                         <tr key={sub._id}>
                           <td>{sub.name}</td>
                           <td>{sub.status || 'N/A'}</td>
-                          <td>
+                          <td className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                             <button
                               onClick={() => handleEditSubcategory(sub)}
-                              className="btn btn-sm bg-blue-500 text-white mr-2 hover:bg-blue-600"
+                              className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600 w-full sm:w-auto"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleDeleteSubcategory(sub._id)}
-                              className="btn btn-sm btn-error text-white hover:bg-red-600"
+                              className="btn btn-sm btn-error text-white hover:bg-red-600 w-full sm:w-auto"
                             >
                               Delete
                             </button>
@@ -328,7 +328,7 @@ const AdminCategories = () => {
             <div className="modal-action">
               <button
                 type="button"
-                className="btn bg-orange-500 border-none hover:bg-orange-600 text-white"
+                className="btn bg-orange-500 border-none hover:bg-orange-600 text-white w-full sm:w-auto"
                 onClick={() =>
                   setSubcategoryModal({
                     isOpen: false,
@@ -351,10 +351,10 @@ const AdminCategories = () => {
         <table className="table w-full bg-[#1A2526] text-white">
           <thead className="text-blue-500">
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Subcategories</th>
-              <th>Actions</th>
+              <th className="text-left">Name</th>
+              <th className="text-left">Status</th>
+              <th className="text-left">Subcategories</th>
+              <th className="text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -368,21 +368,21 @@ const AdminCategories = () => {
                     <td>
                       <button
                         onClick={() => openSubcategoryModal(category)}
-                        className="btn btn-sm bg-orange-500 text-white hover:bg-orange-600"
+                        className="btn btn-sm bg-orange-500 text-white hover:bg-orange-600 w-full sm:w-auto"
                       >
                         View ({(category.categoryOption || []).filter((sub) => sub.status !== 'deleted').length})
                       </button>
                     </td>
-                    <td>
+                    <td className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       <button
                         onClick={() => handleEdit(category)}
-                        className="btn btn-sm bg-blue-500 text-white mr-2 hover:bg-blue-600"
+                        className="btn btn-sm bg-blue-500 text-white hover:bg-blue-600 w-full sm:w-auto"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(category._id)}
-                        className="btn btn-sm btn-error text-white hover:bg-red-600"
+                        className="btn btn-sm btn-error text-white hover:bg-red-600 w-full sm:w-auto"
                       >
                         Delete
                       </button>
