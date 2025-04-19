@@ -119,14 +119,14 @@ const AdminAdmins = () => {
         <>
           <button
             onClick={openCreateModal}
-            className="btn btn-primary mb-4 bg-highlight-orange border-none hover:bg-orange-600"
+            className="btn btn-primary mb-4 bg-highlight-orange border-none hover:bg-orange-600 w-full sm:w-auto"
           >
             Add Admin
           </button>
 
           {modalOpen && (
             <dialog open className="modal">
-              <div className="modal-box bg-[#1A2526] text-white max-w-md mx-auto p-4 sm:p-6">
+              <div className="modal-box bg-[#1A2526] text-white w-full max-w-md mx-auto p-4 sm:p-6">
                 <h3 className="font-bold text-lg sm:text-xl mb-4">Create Admin</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -136,7 +136,7 @@ const AdminAdmins = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="input input-bordered w-full text-sm sm:text-base"
+                      className="input input-bordered w-full text-sm sm:text-base bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                       required
                     />
                   </div>
@@ -147,7 +147,7 @@ const AdminAdmins = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="input input-bordered w-full text-sm sm:text-base"
+                      className="input input-bordered w-full text-sm sm:text-base bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                       required
                     />
                   </div>
@@ -158,7 +158,7 @@ const AdminAdmins = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="input input-bordered w-full text-sm sm:text-base"
+                      className="input input-bordered w-full text-sm sm:text-base bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                       required
                     />
                   </div>
@@ -169,20 +169,20 @@ const AdminAdmins = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="input input-bordered w-full text-sm sm:text-base"
+                      className="input input-bordered w-full text-sm sm:text-base bg-gray-800 text-white placeholder-gray-400 focus:ring-teal-500 focus:border-teal-500"
                       required
                     />
                   </div>
-                  <div className="modal-action flex justify-between">
+                  <div className="modal-action flex flex-col sm:flex-row justify-between gap-2">
                     <button
                       type="submit"
-                      className="btn bg-highlight-teal border-none hover:bg-teal-600 text-sm sm:text-base"
+                      className="btn bg-highlight-teal border-none hover:bg-teal-600 text-sm sm:text-base w-full sm:w-auto"
                     >
                       Create
                     </button>
                     <button
                       type="button"
-                      className="btn btn-ghost text-sm sm:text-base"
+                      className="btn btn-ghost text-sm sm:text-base w-full sm:w-auto"
                       onClick={() => setModalOpen(false)}
                     >
                       Cancel
@@ -214,11 +214,11 @@ const AdminAdmins = () => {
 
           {/* Pagination Controls */}
           {pagination.total > 0 && (
-            <div className="flex justify-center mt-4 space-x-2">
+            <div className="flex flex-col sm:flex-row justify-center items-center mt-4 space-y-2 sm:space-y-0 sm:space-x-2">
               <button
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page === 1}
-                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white"
+                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white w-full sm:w-auto"
               >
                 Previous
               </button>
@@ -228,7 +228,7 @@ const AdminAdmins = () => {
               <button
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white"
+                className="btn bg-highlight-teal border-none hover:bg-teal-600 text-white w-full sm:w-auto"
               >
                 Next
               </button>
